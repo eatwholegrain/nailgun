@@ -1,0 +1,2 @@
+.ui-buttonset .ui-button-text img, .ui-buttonset .ui-button-text img { display: none; }
+.ui-buttonset label[for=radioA2] .ui-button-text, .ui-buttonset label[for=radioA2] .ui-button-text { background: url(../images/calendar-ico.png) no-repeat center 8px!important; }
