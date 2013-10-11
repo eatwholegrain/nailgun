@@ -27,9 +27,22 @@
 
                     $notice = "Account <strong>".$accountTitle."</strong> successfully created <br><br><hr><br>Account owner <strong>".$firstname." ".$lastname."</strong> successfully added.";
 
+                    $session->set("userid", intval($user));
+                    $session->set("firstname", $firstname);
+                    $session->set("lastname", $lastname);
+                    $session->set("username", $username);
+                    $session->set("email", $email);
+                    $session->set("account", intval($account));
+                    $session->set("role", 1);
+                    $session->set("active", 1);
+                    $session->set("start", time());
+                    $session->set("activity", time());
+
+                    $session->regenerateSessionId();
+
                     $userRedirection = true;
 
-                    $utilities->redirect("index.php", 3);
+                    $utilities->redirect("home.php", 3);
 
                 } else {
                     $notice = "Error while creating account owner";
@@ -126,7 +139,7 @@
         $utilities->notify($notice, 7);
 
         if($userRedirection) {
-            $utilities->notify("Redirecting to login page...", 7);
+            $utilities->notify("Redirecting...", 7);
         }
         ?>
     })   

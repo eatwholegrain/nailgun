@@ -399,6 +399,7 @@ ul.listing > li, ul.assignment-listing > li { cursor: pointer; }
 /**/
 .sorted { background: url(../images/sort.png) no-repeat top right; /*border-bottom: 1px dotted #FF9000;*/ padding-right: 20px; color: #FF9000!important; }
 /*********** jQuery UI ***********/
+.ui-widget-overlay { background: #000; opacity: .4; filter: Alpha(Opacity=30); }
 .ui-button-text { height: 26px!important; overflow: hidden; }
 .ui-widget-content { border: 0px!important; }
 .ui-widget-header { border: 0px!important; }

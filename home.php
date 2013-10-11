@@ -3,6 +3,7 @@
 
     if ($auth->isLogedIn() && $users->isUser($session->get("userid"))) {
 
+        $allAccountProjects = $projects->listAllAccountProjects($session->get("account"));
         $tasksCount = $tasks->countUserActiveTasks($session->get("userid"));
         $assignmentCount = $todos->countUserTodos($session->get("userid"));
 
@@ -111,6 +112,28 @@
             $utilities->notify("You have <b>".$tasksCount."</b> open task".$utilities->singular($tasksCount)." and <b>".$assignmentCount."</b> assignment".$utilities->singular($assignmentCount)."", 7);
         } else {
             $utilities->notify("You currently have no open tasks and assignments", 7);
+        }
+        ?>
+
+        <?php
+        if (count($allAccountProjects) == 0) {
+            ?>
+            $(function() {
+                $("#new-message").dialog({
+                    modal: true,
+                    buttons: {
+                        Create: function() {
+                            $(this).dialog("close");
+                            window.location.href="add-project.php";
+                        },
+                        No: function() {
+                            $(this).dialog("close");
+                        }
+                    }
+                });
+            });
+
+        <?php
         }
         ?>
         
@@ -260,7 +283,12 @@
             <!-- /main content -->
         </section>
         <!-- /main wrapper -->
-        
+
+        <div id="new-message" title="Create New Project" style="display: none;">
+            <p>Hi <strong><?php echo $session->get("firstname"); ?></strong>.</p>
+            <p><br>You're new to NailGun.</p>
+            <p>To get started, create your first project!</p>
+        </div>
         
         <!-- footer -->
         <footer>

@@ -16,6 +16,16 @@ class Project extends Database {
     public $today;
 
     /**
+     * List all account projects
+     * @return array Array with project data.
+     */
+    public function listAllAccountProjects($account = 0) {
+        $query = "SELECT * FROM projects WHERE account=".$account." ORDER BY title ASC";
+        $data = $this->select($query);
+        return $data;
+    }
+
+    /**
      * List all projects
      * @return array Array with project data.
      */

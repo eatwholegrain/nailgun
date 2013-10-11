@@ -90,7 +90,7 @@ class Auth extends Database {
      * @return mixed description
      */
      public function isLogedIn() {
-          if(isset($_SESSION["active"]) && !empty($_SESSION["active"]) && intval($_SESSION["active"]) > 0) {
+          if(isset($_SESSION["active"]) && !empty($_SESSION["active"]) && intval($_SESSION["active"]) > 0 && isset($_SESSION["account"]) && !empty($_SESSION["account"]) && intval($_SESSION["account"]) > 0) {
                return true;
           } else {
                return false;
