@@ -3,91 +3,97 @@
 
     if ($auth->isLogedIn() && $users->isUser($session->get("userid"))) {
 
-
         if (!empty($_GET["pid"])) {
 
             $pid = $utilities->filter($_GET["pid"]);
 
-            if ($roles->canViewProject($_GET["pid"], $session->get("userid")) && ($projects->isProjectOpen($pid) || $users->isOwner($session->get("userid")))) {
+            if ($projects->isAccountProject($pid, $session->get("account"))) {
 
-                // delete update
-                if ($utilities->isGet() && !empty($_GET["action"]) && !empty($_GET["context"]) && !empty($_GET["uid"])) {
-                    
-                    $tid = $utilities->filter($_GET["tid"]);
-                    $uid = $utilities->filter($_GET["uid"]);
-                    $action = $utilities->filter($_GET["action"]);
-                    $context = $utilities->filter($_GET["context"]);
+                if ($roles->canViewProject($_GET["pid"], $session->get("userid")) && ($projects->isProjectOpen($pid) || $users->isOwner($session->get("userid")))) {
 
-                    if ($updates->isUpdateAuthor($pid, $tid, $uid, $session->get("userid")) && $action == "delete" && $context == "update-file") {
+                    // delete update
+                    if ($utilities->isGet() && !empty($_GET["action"]) && !empty($_GET["context"]) && !empty($_GET["uid"])) {
+                        
+                        $tid = $utilities->filter($_GET["tid"]);
+                        $uid = $utilities->filter($_GET["uid"]);
+                        $action = $utilities->filter($_GET["action"]);
+                        $context = $utilities->filter($_GET["context"]);
 
-                        $updates->deleteUpdate($pid, $tid, $uid);
+                        if ($updates->isUpdateAuthor($pid, $tid, $uid, $session->get("userid")) && $action == "delete" && $context == "update-file") {
 
-                        $updateFiles = $uploads->getUpdateUploads($pid, $tid, $uid);
+                            $updates->deleteUpdate($pid, $tid, $uid);
 
-                        if ($updateFiles) {
+                            $updateFiles = $uploads->getUpdateUploads($pid, $tid, $uid);
 
-                            for ($i=0; $i<count($updateFiles); $i++) {
+                            if ($updateFiles) {
 
-                            $updateFile = $uploads->getUpload($updateFiles[$i]["id"]);
+                                for ($i=0; $i<count($updateFiles); $i++) {
 
-                            @unlink($updateFile[0]["path"]);
+                                $updateFile = $uploads->getUpload($updateFiles[$i]["id"]);
+
+                                @unlink($updateFile[0]["path"]);
+
+                                }
+
+                                $uploads->deleteUploads($pid, $tid, $uid);
 
                             }
 
-                            $uploads->deleteUploads($pid, $tid, $uid);
+                            $notice .= "Task update deleted <br>";
+
+                        } else {
+
+                            $notice .= "You cannot delete this update <br>";
 
                         }
+                    }
 
-                        $notice .= "Task update deleted <br>";
+                    // delete task file
+                    if ($utilities->isGet() && !empty($_GET["action"]) && !empty($_GET["context"]) && !empty($_GET["fid"])) {
+                        
+                        $fid = $utilities->filter($_GET["fid"]);
+                        $action = $utilities->filter($_GET["action"]);
+                        $context = $utilities->filter($_GET["context"]);
+
+                        if ($roles->isProjectManager($pid, $session->get("userid")) && $action == "delete" && $context == "task-file") {
+
+                            $updateFile = $uploads->getUpload($fid);
+
+                            @unlink($updateFile[0]["path"]);
+
+                            $uploads->deleteUpload($updateFile[0]["id"]);
+
+
+                            $notice .= "Task file deleted <br>";
+
+                        } else {
+
+                            $notice .= "You cannot delete this file <br>";
+
+                        }
+                    }
+
+                    // get task info if user have permission (not implemented)
+                    $project = $projects->getProject($pid);
+                    $allUsers = $users->listAllUsers($session->get("account"));
+
+                    if (isset($project)) {
+
+                        $activeTasks = $tasks->listAllProjectTasks($pid);
+
 
                     } else {
-
-                        $notice .= "You cannot delete this update <br>";
-
+                        // project not exist
+                        $utilities->redirect("error.php?code=6");
                     }
-                }
-
-                // delete task file
-                if ($utilities->isGet() && !empty($_GET["action"]) && !empty($_GET["context"]) && !empty($_GET["fid"])) {
-                    
-                    $fid = $utilities->filter($_GET["fid"]);
-                    $action = $utilities->filter($_GET["action"]);
-                    $context = $utilities->filter($_GET["context"]);
-
-                    if ($roles->isProjectManager($pid, $session->get("userid")) && $action == "delete" && $context == "task-file") {
-
-                        $updateFile = $uploads->getUpload($fid);
-
-                        @unlink($updateFile[0]["path"]);
-
-                        $uploads->deleteUpload($updateFile[0]["id"]);
-
-
-                        $notice .= "Task file deleted <br>";
-
-                    } else {
-
-                        $notice .= "You cannot delete this file <br>";
-
-                    }
-                }
-
-                // get task info if user have permission (not implemented)
-                $project = $projects->getProject($pid);
-                $allUsers = $users->listAllUsers($session->get("account"));
-
-                if (isset($project)) {
-
-                    $activeTasks = $tasks->listAllProjectTasks($pid);
-
 
                 } else {
-                    // project not exist
-                    $utilities->redirect("error.php?code=6");
+                    // permission problem
+                    $utilities->redirect("error.php?code=5");
                 }
 
             } else {
-                // permission problem
+                // account permission problem
                 $utilities->redirect("error.php?code=5");
             }
 

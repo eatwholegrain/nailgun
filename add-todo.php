@@ -6,6 +6,12 @@
         if ($users->isAdmin($session->get("userid"))) {
 
             $uid = isset($_GET["uid"]) ? $utilities->filter($_GET["uid"]) : 0;
+
+            if ($uid > 0 && !$users->isAccountUser($uid, $session->get("account"))) {
+                // permission problem
+                $utilities->redirect("error.php?code=5");
+            }
+
             $userName = isset($_GET["uid"]) ? $users->getUser($utilities->filter($_GET["uid"])) : null;
 
             $todoRedirection = false;

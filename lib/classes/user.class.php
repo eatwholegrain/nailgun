@@ -215,7 +215,7 @@ class User extends Database {
      * @return mixed description
      */
     public function isOwner($uid) {
-        $query = "SELECT role FROM users WHERE id='".$uid."' LIMIT 1";
+        $query = "SELECT role FROM users WHERE id=".$uid." LIMIT 1";
         $data = $this->select($query);
 
         if($data[0]["role"] == 1){
@@ -233,7 +233,7 @@ class User extends Database {
      * @return mixed description
      */
     public function isAdmin($uid) {
-        $query = "SELECT role FROM users WHERE id='".$uid."' LIMIT 1";
+        $query = "SELECT role FROM users WHERE id=".$uid." LIMIT 1";
         $data = $this->select($query);
 
         if($data[0]["role"] == 1 || $data[0]["role"] == 2){
@@ -255,6 +255,23 @@ class User extends Database {
         $data = $this->select($query);
 
         if($data[0]["role"] == 3 || $data[0]["role"] == 2 || $data[0]["role"] == 1){
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    /**
+     * Check if user belong to the account
+     * @param number $uid User ID.
+     * @param number $account Account ID.
+     * @return boolean true if user belong to the account or false if not.
+     */
+    public function isAccountUser($uid, $account) {
+        $query = "SELECT account FROM users WHERE id=".$uid;
+        $data = $this->select($query);
+
+        if($data[0]["account"] == $account) {
             return true;
         } else {
             return false;

@@ -7,23 +7,30 @@
 
             $uid = $utilities->filter($_GET["uid"]);
 
-            $userRedirection = false;
+            if ($users->isAccountUser($uid, $session->get("account"))) {
 
-            if ($users->isAdmin($session->get("userid"))) {
-                // should be at the end
-                $user = $users->getUser($uid);
+                $userRedirection = false;
 
-                if (isset($user)) {
+                if ($users->isAdmin($session->get("userid"))) {
+                    // should be at the end
+                    $user = $users->getUser($uid);
 
-                      $allProjects = $projects->listAllProjects($session->get("account"));
+                    if (isset($user)) {
+
+                          $allProjects = $projects->listAllProjects($session->get("account"));
+
+                    } else {
+                        // user not exist
+                        $utilities->redirect("error.php?code=8");
+                    }
 
                 } else {
-                    // user not exist
-                    $utilities->redirect("error.php?code=8");
+                    // permission problem
+                    $utilities->redirect("error.php?code=5");
                 }
 
             } else {
-                // permission problem
+                // account permission problem
                 $utilities->redirect("error.php?code=5");
             }
 

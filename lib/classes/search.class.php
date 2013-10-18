@@ -19,8 +19,8 @@ class Search extends Database {
      * @param string $term search term.
      * @return array Array with task data.
      */
-    public function searchAllTasks($term) {
-        $query = "SELECT * FROM tasks WHERE title LIKE '%$term%' AND status > 0 ORDER BY expire ASC";
+    public function searchAllTasks($term, $account) {
+        $query = "SELECT * FROM tasks WHERE title LIKE '%$term%' AND status > 0 AND account=".$account." ORDER BY expire ASC";
         //$query = "SELECT * FROM tasks WHERE title LIKE '%$term%' OR description LIKE '%$term%' AND status > 0 ORDER BY expire ASC";
         $data = $this->select($query);
         return $data;

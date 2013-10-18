@@ -10,8 +10,16 @@
             if (!empty($_GET["uid"])) {
 
                 $uid = $utilities->filter($_GET["uid"]);
-                $allUsers = $users->listSpecificUsers($uid, "role");
 
+                if ($users->isAccountUser($uid, $session->get("account"))) {
+
+                    $allUsers = $users->listSpecificUsers($uid, "role");
+
+                } else {
+                    // account permission problem
+                    $utilities->redirect("error.php?code=5");
+                }
+                
             } else {
 
                 $allUsers = $users->listAllUsers($session->get("account"), "role");

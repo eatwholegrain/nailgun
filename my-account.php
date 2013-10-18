@@ -5,25 +5,31 @@
 
         $allProjects = $projects->listAllProjects($session->get("account"));
 
-        if ($utilities->isPost()){
+        if ($users->isAccountUser($session->get("userid"), $session->get("account"))) {
 
-            if (!empty($_POST["user-firstname"]) && !empty($_POST["user-lastname"]) && !empty($_POST["user-email"]) && !empty($_POST["user-username"]) && !empty($_POST["user-id"])){
+            if ($utilities->isPost()){
 
-                $userid = $utilities->filter($_POST["user-id"]);
-                $firstname = $utilities->filter($_POST["user-firstname"]);
-                $lastname = $utilities->filter($_POST["user-lastname"]);
-                $email = $utilities->filter($_POST["user-email"]);
-                $username = $utilities->filter($_POST["user-username"]);
+                if (!empty($_POST["user-firstname"]) && !empty($_POST["user-lastname"]) && !empty($_POST["user-email"]) && !empty($_POST["user-username"]) && !empty($_POST["user-id"])){
 
-                $edit = $users->editUser($userid, $firstname, $lastname, $email, $username);
+                    $firstname = $utilities->filter($_POST["user-firstname"]);
+                    $lastname = $utilities->filter($_POST["user-lastname"]);
+                    $email = $utilities->filter($_POST["user-email"]);
+                    $username = $utilities->filter($_POST["user-username"]);
 
-                if ($edit) {
-                    $notice = "Your account has successfully updated";
+                    $edit = $users->editUser($session->get("userid"), $firstname, $lastname, $email, $username);
+
+                    if ($edit) {
+                        $notice = "Your account has successfully updated";
+                    }
+
+                } else {
+                    $notice = "Enter all required information";
                 }
-
-            } else {
-                $notice = "Enter all required information";
             }
+
+        } else {
+            // account permission problem
+            $utilities->redirect("error.php?code=5");
         }
 
         $user = $users->getUser($session->get("userid")); 
@@ -219,7 +225,6 @@ type='text/javascript';e.parentNode.insertBefore($,e)})(document,'script');
                                 userUsername.add(Validate.Presence);
                                 userUsername.add(Validate.Length, {minimum: 3});
                             </script>
-                            <input name="user-id" type="hidden" id="user-id" class="text-input rounded" value="<?php echo $user[0]["id"]; ?>" readonly="readonly">
                             <a class="orange-button default-button tip" id="password-reset" role="button" href="reset-password.php" title="Reset current password and get new one">RESET PASSWORD</a>
                         </fieldset>
 

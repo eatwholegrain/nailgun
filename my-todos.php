@@ -4,8 +4,8 @@
     if ($auth->isLogedIn() && $users->isUser($session->get("userid"))) {
 
         $allActiveUserTodos = $todos->listUserTodos($session->get("account"), $session->get("userid"), 1);
-        $allResolvedUserTodos = $todos->listUserTodos($session->get("account"), $session->get("userid"), 2);
-        $allClosedUserTodos = $todos->listUserTodos($session->get("account"), $session->get("userid"), 3);
+        $allResolvedUserTodos = $todos->listUserTodos($session->get("account"), $session->get("userid"), 2, "completed", "DESC");
+        $allClosedUserTodos = $todos->listUserTodos($session->get("account"), $session->get("userid"), 3, "completed", "DESC");
 
 
     } else {

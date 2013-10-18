@@ -3,18 +3,32 @@
 
     if ($auth->isLogedIn() && $users->isUser($session->get("userid"))) {
 
-        if (!empty($_GET["uid"])) {
+        if ($users->isAdmin($session->get("userid"))) {
 
-            $uid = $utilities->filter($_GET["uid"]);
-            $user = $users->getUser($uid);
+            if (!empty($_GET["uid"])) {
 
-            $allActiveUserTodos = $todos->listUserTodos($session->get("account"), $uid, 1);
-            $allResolvedUserTodos = $todos->listUserTodos($session->get("account"), $uid, 2);
-            $allClosedUserTodos = $todos->listUserTodos($session->get("account"), $uid, 3);
+                $uid = $utilities->filter($_GET["uid"]);
+                $user = $users->getUser($uid);
+
+                if ($users->isAccountUser($uid, $session->get("account"))) {
+
+                    $allActiveUserTodos = $todos->listUserTodos($session->get("account"), $uid, 1);
+                    $allResolvedUserTodos = $todos->listUserTodos($session->get("account"), $uid, 2, "completed", "DESC");
+                    $allClosedUserTodos = $todos->listUserTodos($session->get("account"), $uid, 3, "completed", "DESC");
+
+                } else {
+                    // account permission problem
+                    $utilities->redirect("error.php?code=5");
+                }
+
+            } else {
+                // user not specified
+                $utilities->redirect("error.php?code=3");
+            }
 
         } else {
-            // user not specified
-            $utilities->redirect("error.php?code=3");
+            // permission problem
+            $utilities->redirect("error.php?code=5");
         }
 
 

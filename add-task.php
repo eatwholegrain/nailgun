@@ -9,90 +9,96 @@
 
                 $pid = $utilities->filter($_GET["pid"]);
 
-                $project = $projects->getProject($pid);
+                if ($projects->isAccountProject($pid, $session->get("account"))) {
 
+                    $project = $projects->getProject($pid);
 
-                if (isset($project)) {
+                    if (isset($project)) {
 
-                    //$allUsers = $users->listAllUsers();
-                    $allUsers = $users->listAllProjectUsers($pid);
+                        //$allUsers = $users->listAllUsers();
+                        $allUsers = $users->listAllProjectUsers($pid);
 
-                } else {
-                    // project not exist
-                    $utilities->redirect("error.php?code=6");
-                }
+                    } else {
+                        // project not exist
+                        $utilities->redirect("error.php?code=6");
+                    }
 
-                // add task
-                if ($utilities->isPost()) {
+                    // add task
+                    if ($utilities->isPost()) {
 
-                    if (!empty($_POST["task-name"]) && !empty($_POST["task-descriptions"]) && !empty($_POST["radio"]) && !empty($_POST["selected-user"])) {
+                        if (!empty($_POST["task-name"]) && !empty($_POST["task-descriptions"]) && !empty($_POST["radio"]) && !empty($_POST["selected-user"])) {
 
-                        $title = $utilities->filter($_POST["task-name"]);
-                        $description = $utilities->filter($_POST["task-descriptions"]);
-                        $author = $session->get("userid");
-                        $assigned = $utilities->filter($_POST["selected-user"]);
-                        $created = $utilities->getDate();
-                        $expire = $utilities->filter($_POST["radio"]);
-                        $priority = $utilities->filter($_POST["priority"]);
+                            $title = $utilities->filter($_POST["task-name"]);
+                            $description = $utilities->filter($_POST["task-descriptions"]);
+                            $author = $session->get("userid");
+                            $assigned = $utilities->filter($_POST["selected-user"]);
+                            $created = $utilities->getDate();
+                            $expire = $utilities->filter($_POST["radio"]);
+                            $priority = $utilities->filter($_POST["priority"]);
 
-                        $expire = $utilities->setExpirationTime($expire);
+                            $expire = $utilities->setExpirationTime($expire);
 
-                        $allFiles = $utilities->reArrayFiles($_FILES['file']);
+                            $allFiles = $utilities->reArrayFiles($_FILES['file']);
 
-                        $task = $tasks->createTask($session->get("account"), $title, $description, $pid, $author, $assigned, $created, $expire, $priority, 1);
+                            $task = $tasks->createTask($session->get("account"), $title, $description, $pid, $author, $assigned, $created, $expire, $priority, 1);
 
-                        if (is_numeric($task)) {
+                            if (is_numeric($task)) {
 
-                            $receiver = $users->getUser($assigned);
+                                $receiver = $users->getUser($assigned);
 
-                            $notifications->newTaskNotify(array($receiver[0]["email"]), $pid, $task, $project[0]["title"], $title, $description, $utilities->formatRemainingDate($expire, SHORT_DATE_FORMAT), $users->getUserEmail($author));
-                            
-                            $notice = "Task for <b>".$project[0]["title"]."</b> successfully created and assigned to <b>".$receiver[0]["firstname"]."</b><br><br>";
-                            
-                            $success = true;
+                                $notifications->newTaskNotify(array($receiver[0]["email"]), $pid, $task, $project[0]["title"], $title, $description, $utilities->formatRemainingDate($expire, SHORT_DATE_FORMAT), $users->getUserEmail($author));
+                                
+                                $notice = "Task for <b>".$project[0]["title"]."</b> successfully created and assigned to <b>".$receiver[0]["firstname"]."</b><br><br>";
+                                
+                                $success = true;
 
-                            // add file
-                            if (!empty($allFiles[0]['tmp_name'])) {
+                                // add file
+                                if (!empty($allFiles[0]['tmp_name'])) {
 
-                                foreach ($allFiles as $file) {
+                                    foreach ($allFiles as $file) {
 
-                                    $fileIdentifier = $utilities->createFileName($utilities->getDate()."_".$file['name']);
-                                    $filePath = UPLOAD."project/".$pid."/".$task."/".$fileIdentifier;
+                                        $fileIdentifier = $utilities->createFileName($utilities->getDate()."_".$file['name']);
+                                        $filePath = UPLOAD."project/".$pid."/".$task."/".$fileIdentifier;
 
-                                    $uploadStatus = $uploads->uploadTaskFile($pid, $task, $fileIdentifier, $file['tmp_name']);
+                                        $uploadStatus = $uploads->uploadTaskFile($pid, $task, $fileIdentifier, $file['tmp_name']);
 
-                                    if ($uploadStatus) {
+                                        if ($uploadStatus) {
 
-                                        $uid = 0;
+                                            $uid = 0;
 
-                                        $uploadUpdate = $uploads->createUpload($session->get("account"), $file['name'], $fileIdentifier, $file['size'], $file['type'], $filePath, $pid, $task, 0, $uid, $author, $created, 1);
+                                            $uploadUpdate = $uploads->createUpload($session->get("account"), $file['name'], $fileIdentifier, $file['size'], $file['type'], $filePath, $pid, $task, 0, $uid, $author, $created, 1);
 
-                                        $notice .= "File <b>".$file['name']."</b> was successfully uploaded <br>";
-                                    
-                                    } else {
+                                            $notice .= "File <b>".$file['name']."</b> was successfully uploaded <br>";
+                                        
+                                        } else {
 
-                                        if(!empty($file['tmp_name'])) {
+                                            if(!empty($file['tmp_name'])) {
 
-                                            $notice .= "Error while uploading file: <b>".$file['name']."</b><br>";
+                                                $notice .= "Error while uploading file: <b>".$file['name']."</b><br>";
 
+                                            }
                                         }
+
                                     }
 
                                 }
 
+                            } else {
+
+                                $success = false;
+                                $notice = "Error while creating task";
                             }
 
                         } else {
 
                             $success = false;
-                            $notice = "Error while creating task";
+                            $notice = "Enter all required information";
                         }
-
-                    } else {
-
-                        $success = false;
-                        $notice = "Enter all required information";
                     }
+
+                } else {
+                    // account permission problem
+                    $utilities->redirect("error.php?code=5");
                 }
 
             } else {

@@ -6,57 +6,65 @@
         if (!empty($_GET["pid"])) {
 
             $pid = $utilities->filter($_GET["pid"]);
+
+            if ($projects->isAccountProject($pid, $session->get("account"))) {
             
-            $session->set("redirection", "project.php?pid=".$pid);
+                $session->set("redirection", "project.php?pid=".$pid);
 
-            // open or close project
-            if ($utilities->isGet() && !empty($_GET["action"]) && $users->isOwner($session->get("userid"))) {
-                    
-                $action = $utilities->filter($_GET["action"]);
-                $completed = $utilities->getDate();
+                // open or close project
+                if ($utilities->isGet() && !empty($_GET["action"]) && $users->isOwner($session->get("userid"))) {
+                        
+                    $action = $utilities->filter($_GET["action"]);
+                    $completed = $utilities->getDate();
 
-                if ($action == "close") {
+                    if ($action == "close") {
 
-                    $closingStatus = $projects->closeProject($pid, $session->get("userid"), $completed);
+                        $closingStatus = $projects->closeProject($pid, $session->get("userid"), $completed);
 
-                    if ($closingStatus) {
+                        if ($closingStatus) {
 
-                        $tasks->closeAllProjectTasks($pid, $session->get("userid"), $completed);
-                        $notice = "Project and all project tasks are closed";
+                            $tasks->closeAllProjectTasks($pid, $session->get("userid"), $completed);
+                            $notice = "Project and all project tasks are closed";
+                        }
+                        
+                    } else if ($action == "open") {
+
+                        $projects->openProject($pid);
+                        $notice = "Project is open again. Please open all required tasks";
+
+                    } 
+                }
+
+                // if can view project
+                if ($roles->canViewProject($_GET["pid"], $session->get("userid")) && ($projects->isProjectOpen($pid) || $users->isOwner($session->get("userid")))) {
+
+                    $project = $projects->getProject($pid);
+
+                    if (isset($project)) {
+
+                        $activeTasks = $tasks->listActiveTasks($pid);
+                        $resolvedTasks = $tasks->listResolvedTasks($pid);
+                        $closedTasks = $tasks->listClosedTasks($pid);
+
+                    } else {
+                        // project not exist
+                        $utilities->redirect("error.php?code=6");
                     }
                     
-                } else if ($action == "open") {
-
-                    $projects->openProject($pid);
-                    $notice = "Project is open again. Please open all required tasks";
-
-                } 
-            }
-
-            // who can view projects
-            if ($roles->canViewProject($_GET["pid"], $session->get("userid")) && ($projects->isProjectOpen($pid) || $users->isOwner($session->get("userid")))) {
-
-                $project = $projects->getProject($pid);
-
-                if (isset($project)) {
-
-                    $activeTasks = $tasks->listActiveTasks($pid);
-                    $resolvedTasks = $tasks->listResolvedTasks($pid);
-                    $closedTasks = $tasks->listClosedTasks($pid);
+                    if(empty($notice)) {
+                        $notice = "Welcome to <b>".$project[0]["title"]."</b> project<b>";
+                    }
 
                 } else {
-                    // project not exist
-                    $utilities->redirect("error.php?code=6");
-                }
-                
-                if(empty($notice)) {
-                    $notice = "Welcome to <b>".$project[0]["title"]."</b> project<b>";
+                    // permission problem
+                    $utilities->redirect("error.php?code=5");
                 }
 
             } else {
-                // permission problem
+                // account permission problem
                 $utilities->redirect("error.php?code=5");
             }
+
 
         } else {
             // project not specified
@@ -142,6 +150,20 @@
             return false;
         });
 
+        $("#by-resolved").click(function() {
+            $("ul.listing > li").tsort('',{attr:'data-completed', order: 'desc'});
+            $(".tip").removeClass("sorted");
+            $(this).addClass("sorted");
+            return false;
+        });
+
+        $("#by-completed").click(function() {
+            $("ul.listing > li").tsort('',{attr:'data-completed', order: 'desc'});
+            $(".tip").removeClass("sorted");
+            $(this).addClass("sorted");
+            return false;
+        });
+
         $("#my").click(function() {
             onlyMe();
         });
@@ -201,18 +223,6 @@
     }
 
 </script>
-
-<?php if (defined("CHAT") && CHAT) { ?>
-
-<script type="text/javascript">
-window.$zopim||(function(d,s){var z=$zopim=function(c){z._.push(c)},$=z.s=
-d.createElement(s),e=d.getElementsByTagName(s)[0];z.set=function(o){z.set.
-_.push(o)};z._=[];z.set._=[];$.async=!0;$.setAttribute('charset','utf-8');
-$.src='//cdn.zopim.com/?<?php if (defined("ZOPIM_ID")){ echo ZOPIM_ID;} ?>';z.t=+new Date;$.
-type='text/javascript';e.parentNode.insertBefore($,e)})(document,'script');
-</script>
-
-<?php } ?>
 
 </head>
 <body>
@@ -473,6 +483,12 @@ type='text/javascript';e.parentNode.insertBefore($,e)})(document,'script');
                         <div class="task-title">
                             <p>Resolved tasks</p>
                         </div>
+                        <div class="task-date">
+                            <p><a class="tip sorted" id="by-resolved" href="#" title="Sort by date of resolving the task">Resolved</a></p>
+                        </div>
+                        <div class="task-user">
+                            <p>Resolved by</p>
+                        </div>
                     </div>
                     <!-- /task header -->
 
@@ -482,7 +498,7 @@ type='text/javascript';e.parentNode.insertBefore($,e)})(document,'script');
                     for ($i=0; $i < count($resolvedTasks); $i++) {
                     ?>
                     
-                    <li data-id="<?php echo $resolvedTasks[$i]["id"]; ?>" data-expire="<?php echo $resolvedTasks[$i]["expire"]; ?>" data-created="<?php echo $resolvedTasks[$i]["created"]; ?>" data-assigned="<?php echo $users->getShortUserName($tasks->getAssignedTaskUser($pid, $resolvedTasks[$i]["id"])); ?>" data-title="<?php echo $resolvedTasks[$i]["title"]; ?>" data-mine="<?php if ($tasks->isTaskMine($resolvedTasks[$i]["project"], $resolvedTasks[$i]["id"], $session->get("userid"))) { echo '1'; } else { echo '0'; } ?>">
+                    <li data-id="<?php echo $resolvedTasks[$i]["id"]; ?>" data-expire="<?php echo $resolvedTasks[$i]["expire"]; ?>" data-created="<?php echo $resolvedTasks[$i]["created"]; ?>" data-assigned="<?php echo $users->getShortUserName($tasks->getAssignedTaskUser($pid, $resolvedTasks[$i]["id"])); ?>" data-completed="<?php echo $resolvedTasks[$i]["completed"]; ?>" data-title="<?php echo $resolvedTasks[$i]["title"]; ?>" data-mine="<?php if ($tasks->isTaskMine($resolvedTasks[$i]["project"], $resolvedTasks[$i]["id"], $session->get("userid"))) { echo '1'; } else { echo '0'; } ?>">
 
                     <!-- task -->
                     <div class="task task-bg-resolved">
@@ -490,14 +506,14 @@ type='text/javascript';e.parentNode.insertBefore($,e)})(document,'script');
                             <p><a class="tip" href="task.php?tid=<?php echo $resolvedTasks[$i]["id"]; ?>&pid=<?php echo $pid; ?>" role="link" title="<?php echo strip_tags($resolvedTasks[$i]["description"]); ?>"><?php echo $resolvedTasks[$i]["title"]; ?></a></p>
                         </div>
                         <div class="task-date">
-                            <p><a class="tip" href="#" role="link" title="Due: <?php echo $utilities->formatRemainingDate($resolvedTasks[$i]["expire"], SHORT_DATE_FORMAT); ?>"><?php echo date(SHORT_DATE_FORMAT, $resolvedTasks[$i]["expire"]); ?></a></p>
+                            <p><a class="tip" href="#" role="link" title="<?php echo $utilities->formatRemainingDate($resolvedTasks[$i]["completed"], SHORT_DATE_FORMAT, ""); ?>"><?php echo $utilities->formatDate($resolvedTasks[$i]["completed"], SHORT_DATE_FORMAT, ""); ?></a></p>
                         </div>
                         <div class="task-user">
                             <p>
-                                <a class="tip" href="#" role="link" title="<?php echo $users->getFullUserName($tasks->getAssignedTaskUser($pid, $resolvedTasks[$i]["id"])); ?>">
+                                <a class="tip" href="#" role="link" title="<?php echo $users->getFullUserName($tasks->getCompletedTaskUser($pid, $resolvedTasks[$i]["id"])); ?>">
                                 <?php 
-                                    if (isset($resolvedTasks[$i]["assigned"])) { 
-                                        echo $users->getShortUserName($tasks->getAssignedTaskUser($pid, $resolvedTasks[$i]["id"])); 
+                                    if (isset($resolvedTasks[$i]["finished"])) { 
+                                        echo $users->getShortUserName($tasks->getCompletedTaskUser($pid, $resolvedTasks[$i]["id"])); 
                                     }; 
                                 ?>
                                 </a>
@@ -524,6 +540,12 @@ type='text/javascript';e.parentNode.insertBefore($,e)})(document,'script');
                         <div class="task-title">
                             <p>Closed tasks</p>
                         </div>
+                        <div class="task-date">
+                            <p><a class="tip sorted" id="by-completed" href="#" title="Sort by task completion date">Completed</a></p>
+                        </div>
+                        <div class="task-user">
+                            <p>Completed by</p>
+                        </div>
                     </div>
                     <!-- /task header -->
 
@@ -533,7 +555,7 @@ type='text/javascript';e.parentNode.insertBefore($,e)})(document,'script');
                     for ($i=0; $i < count($closedTasks); $i++) {
                     ?>
 
-                    <li data-id="<?php echo $closedTasks[$i]["id"]; ?>" data-expire="<?php echo $closedTasks[$i]["expire"]; ?>" data-created="<?php echo $closedTasks[$i]["created"]; ?>" data-assigned="<?php echo $users->getShortUserName($tasks->getAssignedTaskUser($pid, $closedTasks[$i]["id"])); ?>" data-title="<?php echo $closedTasks[$i]["title"]; ?>" data-mine="<?php if ($tasks->isTaskMine($closedTasks[$i]["project"], $closedTasks[$i]["id"], $session->get("userid"))) { echo '1'; } else { echo '0'; } ?>">
+                    <li data-id="<?php echo $closedTasks[$i]["id"]; ?>" data-expire="<?php echo $closedTasks[$i]["expire"]; ?>" data-created="<?php echo $closedTasks[$i]["created"]; ?>" data-assigned="<?php echo $users->getShortUserName($tasks->getAssignedTaskUser($pid, $closedTasks[$i]["id"])); ?>" data-completed="<?php echo $closedTasks[$i]["completed"]; ?>" data-title="<?php echo $closedTasks[$i]["title"]; ?>" data-mine="<?php if ($tasks->isTaskMine($closedTasks[$i]["project"], $closedTasks[$i]["id"], $session->get("userid"))) { echo '1'; } else { echo '0'; } ?>">
 
                     <!-- task -->
                     <div class="task task-bg-closed">
@@ -541,14 +563,14 @@ type='text/javascript';e.parentNode.insertBefore($,e)})(document,'script');
                             <p><a class="tip" href="task.php?tid=<?php echo $closedTasks[$i]["id"]; ?>&pid=<?php echo $pid; ?>" role="link" title="<?php echo strip_tags($closedTasks[$i]["description"]); ?>"><?php echo $closedTasks[$i]["title"]; ?></a></p>
                         </div>
                         <div class="task-date">
-                            <p><a class="tip" href="#" role="link" title="Due: <?php echo $utilities->formatRemainingDate($closedTasks[$i]["expire"], SHORT_DATE_FORMAT); ?>"><?php echo date(SHORT_DATE_FORMAT, $closedTasks[$i]["expire"]); ?></a></p>
+                            <p><a class="tip" href="#" role="link" title="<?php echo $utilities->formatRemainingDate($closedTasks[$i]["completed"], SHORT_DATE_FORMAT, ""); ?>"><?php echo $utilities->formatDate($closedTasks[$i]["completed"], SHORT_DATE_FORMAT, ""); ?></a></p>
                         </div>
                         <div class="task-user">
                             <p>
-                                <a class="tip" href="#" role="link" title="<?php echo $users->getFullUserName($tasks->getAssignedTaskUser($pid, $closedTasks[$i]["id"])); ?>">
+                                <a class="tip" href="#" role="link" title="<?php echo $users->getFullUserName($tasks->getCompletedTaskUser($pid, $closedTasks[$i]["id"])); ?>">
                                 <?php 
-                                    if (isset($closedTasks[$i]["assigned"])) { 
-                                        echo $users->getShortUserName($tasks->getAssignedTaskUser($pid, $closedTasks[$i]["id"])); 
+                                    if (isset($closedTasks[$i]["finished"])) { 
+                                        echo $users->getShortUserName($tasks->getCompletedTaskUser($pid, $closedTasks[$i]["id"])); 
                                     }; 
                                 ?>
                                 </a>

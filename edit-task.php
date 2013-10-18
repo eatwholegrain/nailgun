@@ -8,60 +8,64 @@
             $pid = $utilities->filter($_GET["pid"]);
             $tid = $utilities->filter($_GET["tid"]);
 
-            $firstAssigned = $tasks->getAssignedTaskUser($pid, $tid);
-            $firstStatus = $tasks->getTaskStatus($pid, $tid);
-            $firstDate = $tasks->getTaskDateExpired($pid, $tid);
+            if ($tasks->isAccountTask($tid, $session->get("account"))) {
 
-            $taskRedirection = false;
+                $firstAssigned = $tasks->getAssignedTaskUser($pid, $tid);
+                $firstStatus = $tasks->getTaskStatus($pid, $tid);
+                $firstDate = $tasks->getTaskDateExpired($pid, $tid);
 
-            if ($users->isOwner($session->get("userid"))) {
+                $taskRedirection = false;
 
-                if ($utilities->isPost()){
+                if ($users->isOwner($session->get("userid"))) {
 
-                    if (!empty($_POST["task-name"]) && !empty($_POST["task-descriptions"]) && !empty($_POST["radioA"]) && !empty($_POST["radioB"]) && !empty($_POST["selected-user"])) {
+                    if ($utilities->isPost()) {
 
-                        $title = $utilities->filter($_POST["task-name"]);
-                        $description = $utilities->filter($_POST["task-descriptions"]);
-                        $status = $utilities->filter($_POST["radioB"]);
-                        $reassigned = $utilities->filter($_POST["selected-user"]);                      
-                        $expire = $utilities->filter($_POST["radioA"]);
-                        $expire = $utilities->setExpirationTime($expire);
-                        $priority = $utilities->filter($_POST["priority"]);
+                        if (!empty($_POST["task-name"]) && !empty($_POST["task-descriptions"]) && !empty($_POST["radioA"]) && !empty($_POST["radioB"]) && !empty($_POST["selected-user"])) {
 
-                        $author = $session->get("userid");
-                        $projectTitle = $projects->getProjectTitle($pid);
-                        $created = $utilities->getDate();
+                            $title = $utilities->filter($_POST["task-name"]);
+                            $description = $utilities->filter($_POST["task-descriptions"]);
+                            $status = $utilities->filter($_POST["radioB"]);
+                            $reassigned = $utilities->filter($_POST["selected-user"]);                      
+                            $expire = $utilities->filter($_POST["radioA"]);
+                            $expire = $utilities->setExpirationTime($expire);
+                            $priority = $utilities->filter($_POST["priority"]);
 
-                        $allFiles = $utilities->reArrayFiles($_FILES['file']);
+                            $author = $session->get("userid");
+                            $projectTitle = $projects->getProjectTitle($pid);
+                            $created = $utilities->getDate();
 
-                        $taskChanged = false;
-                        
-                        $task = $tasks->editTask($tid, $title, $description, $reassigned, $expire, $priority, $status);
+                            $allFiles = $utilities->reArrayFiles($_FILES['file']);
 
-                        if ($task) {
+                            $taskChanged = false;
+                            
+                            $task = $tasks->editTask($tid, $title, $description, $reassigned, $expire, $priority, $status);
 
-                            // check this
+                            if ($task) {
 
-                            if (!empty($allFiles[0]['tmp_name'])) {
+                                // check this
 
-                                foreach ($allFiles as $file) {
+                                if (!empty($allFiles[0]['tmp_name'])) {
 
-                                    $fileIdentifier = $utilities->createFileName($utilities->getDate()."_".$file['name']);
-                                    $filePath = UPLOAD."project/".$pid."/".$tid."/".$fileIdentifier;
+                                    foreach ($allFiles as $file) {
 
-                                    $uploadStatus = $uploads->uploadTaskFile($pid, $tid, $fileIdentifier, $file['tmp_name']);
+                                        $fileIdentifier = $utilities->createFileName($utilities->getDate()."_".$file['name']);
+                                        $filePath = UPLOAD."project/".$pid."/".$tid."/".$fileIdentifier;
 
-                                    if ($uploadStatus) {
+                                        $uploadStatus = $uploads->uploadTaskFile($pid, $tid, $fileIdentifier, $file['tmp_name']);
 
-                                        $uploadUpdate = $uploads->createUpload($session->get("account"), $file['name'], $fileIdentifier, $file['size'], $file['type'], $filePath, $pid, $tid, 0, 0, $author, $created, 1);
+                                        if ($uploadStatus) {
 
-                                        $notice .= "File <b>".$file['name']."</b> was successfully uploaded <br>";
-                                    
-                                    } else {
+                                            $uploadUpdate = $uploads->createUpload($session->get("account"), $file['name'], $fileIdentifier, $file['size'], $file['type'], $filePath, $pid, $tid, 0, 0, $author, $created, 1);
 
-                                        if(!empty($file['tmp_name'])) {
+                                            $notice .= "File <b>".$file['name']."</b> was successfully uploaded <br>";
+                                        
+                                        } else {
 
-                                            $notice .= "Error while uploading file: <b>".$file['name']."</b><br>";
+                                            if(!empty($file['tmp_name'])) {
+
+                                                $notice .= "Error while uploading file: <b>".$file['name']."</b><br>";
+
+                                            }
 
                                         }
 
@@ -69,48 +73,51 @@
 
                                 }
 
+                                if ($firstAssigned != $reassigned) {
+                                    // reassign task
+                                    $notifications->newTaskNotify(array($users->getUserEmail($reassigned)), $pid, $tid, $projectTitle, $title, $description, $utilities->formatRemainingDate($expire, SHORT_DATE_FORMAT), $users->getUserEmail($author));
+                                    $taskChanged = true;
+                                }
+
+                                if ($firstStatus != $status) { 
+                                    $taskChanged = true;
+                                }
+
+                                if ($firstDate != $expire) { 
+                                    $taskChanged = true;
+                                }
+
+                                // task changes observer routine
+
+
+                                $notice .= "Task successfully updated.";
+
+                                $taskRedirection = true;
+
+                                $utilities->redirect("task.php?pid=".$pid."&tid=".$tid, 3);
+
+                            } else {
+                                $notice = "Error while updating task";
                             }
-
-                            if ($firstAssigned != $reassigned) {
-                                // reassign task
-                                $notifications->newTaskNotify(array($users->getUserEmail($reassigned)), $pid, $tid, $projectTitle, $title, $description, $utilities->formatRemainingDate($expire, SHORT_DATE_FORMAT), $users->getUserEmail($author));
-                                $taskChanged = true;
-                            }
-
-                            if ($firstStatus != $status) { 
-                                $taskChanged = true;
-                            }
-
-                            if ($firstDate != $expire) { 
-                                $taskChanged = true;
-                            }
-
-                            // task changes observer routine
-
-
-                            $notice .= "Task successfully updated.";
-
-                            $taskRedirection = true;
-
-                            $utilities->redirect("task.php?pid=".$pid."&tid=".$tid, 3);
 
                         } else {
-                            $notice = "Error while updating task";
+                            $notice = "Enter all required information";
+
                         }
-
-                    } else {
-                        $notice = "Enter all required information";
-
+                    
                     }
-                
+
+                    $project = $projects->getProject($pid);
+                    $task = $tasks->getTask($pid, $tid);
+                    $allUsers = $users->listAllProjectUsers($pid);
+
+                } else {
+                    // permission problem
+                    $utilities->redirect("error.php?code=5");
                 }
 
-                $project = $projects->getProject($pid);
-                $task = $tasks->getTask($pid, $tid);
-                $allUsers = $users->listAllProjectUsers($pid);
-
             } else {
-                // permission problem
+                // account permission problem
                 $utilities->redirect("error.php?code=5");
             }
 

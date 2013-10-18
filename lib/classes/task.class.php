@@ -127,7 +127,7 @@ class Task extends Database {
      * @return mixed description
      */
     public function listResolvedTasks($pid) {
-        $query = "SELECT * FROM tasks WHERE project=".$pid." AND status=2";
+        $query = "SELECT * FROM tasks WHERE project=".$pid." AND status=2 ORDER BY completed DESC, created DESC";
         $data = $this->select($query);
         return $data;
     }
@@ -140,7 +140,7 @@ class Task extends Database {
      * @return mixed description
      */
     public function listClosedTasks($pid) {
-        $query = "SELECT * FROM tasks WHERE project=".$pid." AND status=3";
+        $query = "SELECT * FROM tasks WHERE project=".$pid." AND status=3 ORDER BY completed DESC, created DESC";
         $data = $this->select($query);
         return $data;
     }
@@ -152,8 +152,8 @@ class Task extends Database {
      * @param boolean $boolean Boolean desc.
      * @return mixed description
      */
-    public function listUserTasks($uid, $status) {
-        $query = "SELECT * FROM tasks WHERE assigned=".$uid." AND status=".$status." ORDER BY expire ASC, created DESC";
+    public function listUserTasks($uid, $status, $order="expire", $sort="ASC") {
+        $query = "SELECT * FROM tasks WHERE assigned=".$uid." AND status=".$status." ORDER BY ".$order." ".$sort.", created DESC";
         $data = $this->select($query);
         return $data;
     }
@@ -258,6 +258,19 @@ class Task extends Database {
         $query = "SELECT assigned FROM tasks WHERE project=".$pid." AND id=".$tid." LIMIT 1";
         $data = $this->select($query);
         return $data[0]["assigned"];
+    }
+
+    /**
+     * -.
+     * @param string $string String desc.
+     * @param number $number Number desc.
+     * @param boolean $boolean Boolean desc.
+     * @return mixed description
+     */
+    public function getCompletedTaskUser($pid, $tid) {
+        $query = "SELECT finished FROM tasks WHERE project=".$pid." AND id=".$tid." LIMIT 1";
+        $data = $this->select($query);
+        return $data[0]["finished"];
     }
 
     /**
@@ -494,6 +507,23 @@ class Task extends Database {
         $data = $this->select($query);
 
         if ($this->getNumRows($data) == 0) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    /**
+     * Check if task belong to the account
+     * @param number $tid Task ID.
+     * @param number $account Account ID.
+     * @return boolean true if task belong to the account or false if not.
+     */
+    public function isAccountTask($tid, $account) {
+        $query = "SELECT account FROM tasks WHERE id=".$tid;
+        $data = $this->select($query);
+
+        if($data[0]["account"] == $account) {
             return true;
         } else {
             return false;

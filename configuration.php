@@ -12,7 +12,7 @@ define("ROOT", "http://".$_SERVER['HTTP_HOST'].dirname($_SERVER['PHP_SELF'])."/"
  * Database settings
  */
 define("DB_TYPE", "mysql");
-define("DB_HOST", "localhost");
+define("DB_HOST", "127.0.0.1");
 define("DB_NAME", "nailgunapp.com");
 define("DB_USER", "root");
 define("DB_PASS", "");
@@ -24,14 +24,14 @@ define("DB_PASS", "");
 define("APPLICATION_TITLE", "Nail Gun");
 
 /**
+ * Encryption key
+ */
+define("ENC_KEY", "N!@#$%^&*gun");
+
+/**
  * Salt for password encryption
  */
 define("HASH_PASSWORD_KEY", "nailgun");
-
-/**
- * Private key for rss updates access
- */
-define("ACCESS_KEY", "n2g12app");
 
 /**
  * Reply to / From email address

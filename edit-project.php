@@ -6,102 +6,109 @@
         if (!empty($_GET["pid"])) {
 
             $pid = $utilities->filter($_GET["pid"]);
+
+            if ($projects->isAccountProject($pid, $session->get("account"))) {
             
-            $projectRedirection = false;
+                $projectRedirection = false;
 
-            if ($users->isOwner($session->get("userid"))) {
+                if ($users->isOwner($session->get("userid"))) {
 
-                $allUsers = $users->listAllUsers($session->get("account"), "firstname");
+                    $allUsers = $users->listAllUsers($session->get("account"), "firstname");
 
-                if ($utilities->isPost()) {
+                    if ($utilities->isPost()) {
 
-                    if (!empty($_POST["project-name"]) && !empty($_POST["project-descriptions"]) && !empty($_POST["radio"])) {
+                        if (!empty($_POST["project-name"]) && !empty($_POST["project-descriptions"]) && !empty($_POST["radio"])) {
 
-                        $title = $utilities->filter($_POST["project-name"]);
-                        $description = $utilities->filter($_POST["project-descriptions"]);
-                        $author = $session->get("userid");
-                        $created = $utilities->getDate();
-                        $expire = $utilities->filter($_POST["radio"]);
-                        $expire = $utilities->setExpirationTime($expire);
-                        
-                        $project = $projects->editProject($pid, $title, $description, $expire);
+                            $title = $utilities->filter($_POST["project-name"]);
+                            $description = $utilities->filter($_POST["project-descriptions"]);
+                            $author = $session->get("userid");
+                            $created = $utilities->getDate();
+                            $expire = $utilities->filter($_POST["radio"]);
+                            $expire = $utilities->setExpirationTime($expire);
+                            
+                            $project = $projects->editProject($pid, $title, $description, $expire);
 
-                        $receivers = array();
+                            $receivers = array();
 
-                        if ($project) {
+                            if ($project) {
 
-                            for ($i=0; $i < count($allUsers); $i++) {
+                                for ($i=0; $i < count($allUsers); $i++) {
 
-                                if (!empty($_POST["radio-".$allUsers[$i]["id"]])) {
+                                    if (!empty($_POST["radio-".$allUsers[$i]["id"]])) {
 
-                                    if ($roles->isRoleSet($pid, $allUsers[$i]["id"])) {
+                                        if ($roles->isRoleSet($pid, $allUsers[$i]["id"])) {
 
-                                        $role = $roles->updateRole($pid, $allUsers[$i]["id"], $_POST["radio-".$allUsers[$i]["id"]]);
+                                            $role = $roles->updateRole($pid, $allUsers[$i]["id"], $_POST["radio-".$allUsers[$i]["id"]]);
+
+                                        } else {
+
+                                            $role = $roles->createRole($pid, $allUsers[$i]["id"], $_POST["radio-".$allUsers[$i]["id"]]);
+
+                                            array_push($receivers, $allUsers[$i]["email"]);
+
+                                        }
+
+                                        //$role = $roles->createRole($project, $allUsers[$i]["id"], $_POST["radio-".$allUsers[$i]["id"]]);
 
                                     } else {
 
-                                        $role = $roles->createRole($pid, $allUsers[$i]["id"], $_POST["radio-".$allUsers[$i]["id"]]);
-
-                                        array_push($receivers, $allUsers[$i]["email"]);
-
+                                        $role = $roles->deleteRoles($pid, $allUsers[$i]["id"]);
                                     }
 
-                                    //$role = $roles->createRole($project, $allUsers[$i]["id"], $_POST["radio-".$allUsers[$i]["id"]]);
-
-                                } else {
-
-                                    $role = $roles->deleteRoles($pid, $allUsers[$i]["id"]);
                                 }
 
+                                $notifications->newProjectNotify($receivers, $pid, $title, $users->getUserEmail($author));
+
+                                $notice = "Project successfully updated.";
+
+                                $projectRedirection = true;
+
+                                $utilities->redirect("project.php?pid=".$pid, 3);
+
+                            } else {
+                                $notice = "Error while updating project";
                             }
 
-                            $notifications->newProjectNotify($receivers, $pid, $title, $users->getUserEmail($author));
-
-                            $notice = "Project successfully updated.";
-
-                            $projectRedirection = true;
-
-                            $utilities->redirect("project.php?pid=".$pid, 3);
-
                         } else {
-                            $notice = "Error while updating project";
+                            $notice = "Enter all required information";
+
                         }
-
-                    } else {
-                        $notice = "Enter all required information";
-
+                    
                     }
-                
+
+                    // open or close project
+                if ($utilities->isGet() && !empty($_GET["action"]) && $users->isOwner($session->get("userid"))) {
+                        
+                    $action = $utilities->filter($_GET["action"]);
+                    $completed = $utilities->getDate();
+
+                    if ($action == "close") {
+
+                        $closingStatus = $projects->closeProject($pid, $session->get("userid"), $completed);
+
+                        if ($closingStatus) {
+
+                            $tasks->closeAllProjectTasks($pid, $session->get("userid"), $completed);
+                            $notice = "Project and all project tasks are closed";
+                        }
+                        
+                    } else if ($action == "open") {
+
+                        $projects->openProject($pid);
+                        $notice = "Project is open again. Please open all required tasks";
+
+                    } 
                 }
 
-                // open or close project
-            if ($utilities->isGet() && !empty($_GET["action"]) && $users->isOwner($session->get("userid"))) {
-                    
-                $action = $utilities->filter($_GET["action"]);
-                $completed = $utilities->getDate();
+                    $project = $projects->getProject($pid);
 
-                if ($action == "close") {
-
-                    $closingStatus = $projects->closeProject($pid, $session->get("userid"), $completed);
-
-                    if ($closingStatus) {
-
-                        $tasks->closeAllProjectTasks($pid, $session->get("userid"), $completed);
-                        $notice = "Project and all project tasks are closed";
-                    }
-                    
-                } else if ($action == "open") {
-
-                    $projects->openProject($pid);
-                    $notice = "Project is open again. Please open all required tasks";
-
-                } 
-            }
-
-                $project = $projects->getProject($pid);
+                } else {
+                    // permission problem
+                    $utilities->redirect("error.php?code=5");
+                }
 
             } else {
-                // permission problem
+                // account permission problem
                 $utilities->redirect("error.php?code=5");
             }
 

@@ -2,18 +2,16 @@
 require("lib/bootstrap.php");
 require(PATH."/lib/classes/rss.class.php");
 
-if (!empty($_GET["pid"]) && !empty($_GET["tid"]) && !empty($_GET["key"])) {
+if (!empty($_GET["p"]) && !empty($_GET["t"])) {
 
-    $pid = $utilities->filter($_GET["pid"]);
-    $tid = $utilities->filter($_GET["tid"]);
-    $key = $utilities->filter($_GET["key"]);
+    $pid = $utilities->deobfuscate($utilities->filter($_GET["p"]));
+    $tid = $utilities->deobfuscate($utilities->filter($_GET["t"]));
 
-    if ($key === ACCESS_KEY) {
+    if ($pid > 0 && $tid > 0) {
 
         $project = $projects->getProject($pid);
         $task = $tasks->getTask($pid, $tid);
         $taskUpdates = $updates->listAllTaskUpdates($pid, $tid);
-        $allUsers = $users->listAllUsers();
 
         $feed = new RSS();
         $feed->title = $project[0]["title"]." / ".$task[0]["title"]." Latest updates";

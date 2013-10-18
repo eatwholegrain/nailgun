@@ -9,100 +9,106 @@
 
                 $aid = $utilities->filter($_GET["aid"]);
 
-                $firstAssigned = $todos->getAssignedTodoUser($aid);
-                $firstStatus = $todos->getTodoStatus($aid);
-                $firstDate = $todos->getTodoDateExpired($aid);
+                if ($todos->isAccountTodo($aid, $session->get("account"))) {
 
-                $todoRedirection = false;
+                    $firstAssigned = $todos->getAssignedTodoUser($aid);
+                    $firstStatus = $todos->getTodoStatus($aid);
+                    $firstDate = $todos->getTodoDateExpired($aid);
 
-                // add todo
-                if ($utilities->isPost()) {
+                    $todoRedirection = false;
 
-                    if (!empty($_POST["todo-name"]) && !empty($_POST["todo-descriptions"]) && !empty($_POST["radioA"]) && !empty($_POST["radioB"]) && !empty($_POST["selected-user"])) {
+                    // add todo
+                    if ($utilities->isPost()) {
 
-                        $title = $utilities->filter($_POST["todo-name"]);
-                        $description = $utilities->filter($_POST["todo-descriptions"]);
-                        $status = $utilities->filter($_POST["radioB"]);
-                        $reassigned = $utilities->filter($_POST["selected-user"]);                      
-                        $expire = $utilities->filter($_POST["radioA"]);
-                        $expire = $utilities->setExpirationTime($expire);
-                        $priority = $utilities->filter($_POST["priority"]);
+                        if (!empty($_POST["todo-name"]) && !empty($_POST["todo-descriptions"]) && !empty($_POST["radioA"]) && !empty($_POST["radioB"]) && !empty($_POST["selected-user"])) {
 
-                        $author = $session->get("userid");
-                        $created = $utilities->getDate();
+                            $title = $utilities->filter($_POST["todo-name"]);
+                            $description = $utilities->filter($_POST["todo-descriptions"]);
+                            $status = $utilities->filter($_POST["radioB"]);
+                            $reassigned = $utilities->filter($_POST["selected-user"]);                      
+                            $expire = $utilities->filter($_POST["radioA"]);
+                            $expire = $utilities->setExpirationTime($expire);
+                            $priority = $utilities->filter($_POST["priority"]);
 
-                        $allFiles = $utilities->reArrayFiles($_FILES['file']);
+                            $author = $session->get("userid");
+                            $created = $utilities->getDate();
 
-                        $todoUpdate = $todos->editTodo($aid, $title, $description, $reassigned, $expire, $priority, $status);
+                            $allFiles = $utilities->reArrayFiles($_FILES['file']);
 
-                        if ($todoUpdate) {
-                            
-                            $success = true;
+                            $todoUpdate = $todos->editTodo($aid, $title, $description, $reassigned, $expire, $priority, $status);
 
-                            if (!empty($allFiles[0]['tmp_name'])) {
+                            if ($todoUpdate) {
+                                
+                                $success = true;
 
-                                foreach ($allFiles as $file) {
+                                if (!empty($allFiles[0]['tmp_name'])) {
 
-                                    $fileIdentifier = $utilities->createFileName($utilities->getDate()."_".$file['name']);
-                                    $filePath = UPLOAD."todo/".$aid."/".$fileIdentifier;
+                                    foreach ($allFiles as $file) {
 
-                                    $uploadStatus = $uploads->uploadTodoFile($aid, $fileIdentifier, $file['tmp_name']);
+                                        $fileIdentifier = $utilities->createFileName($utilities->getDate()."_".$file['name']);
+                                        $filePath = UPLOAD."todo/".$aid."/".$fileIdentifier;
 
-                                    if ($uploadStatus) {
+                                        $uploadStatus = $uploads->uploadTodoFile($aid, $fileIdentifier, $file['tmp_name']);
 
-                                        $uploadUpdate = $uploads->createUpload($session->get("account"), $file['name'], $fileIdentifier, $file['size'], $file['type'], $filePath, 0, 0, $aid, 0, $author, $created, 1);
+                                        if ($uploadStatus) {
 
-                                        $notice .= "File <b>".$file['name']."</b> was successfully uploaded <br>";
-                                    
-                                    } else {
+                                            $uploadUpdate = $uploads->createUpload($session->get("account"), $file['name'], $fileIdentifier, $file['size'], $file['type'], $filePath, 0, 0, $aid, 0, $author, $created, 1);
+
+                                            $notice .= "File <b>".$file['name']."</b> was successfully uploaded <br>";
                                         
-                                        if(!empty($file['tmp_name'])) {
+                                        } else {
+                                            
+                                            if(!empty($file['tmp_name'])) {
 
-                                            $notice .= "Error while uploading file: <b>".$file['name']."</b><br>";
+                                                $notice .= "Error while uploading file: <b>".$file['name']."</b><br>";
 
+                                            }
                                         }
+
                                     }
 
                                 }
 
+                                if ($firstAssigned != $reassigned) {
+                                    // reassign todo
+                                    $notifications->newTodoNotify(array($users->getUserEmail($reassigned)), $aid, $title, $description, $utilities->formatRemainingDate($expire, SHORT_DATE_FORMAT), $users->getUserEmail($session->get("userid")));
+                                    $todoChanged = true;
+                                }
+
+                                if ($firstStatus != $status) { 
+                                    $todoChanged = true;
+                                }
+
+                                if ($firstDate != $expire) { 
+                                    $todoChanged = true;
+                                }
+
+                                $notice .= "Loose task successfully updated.";
+
+
+                                $todoRedirection = true;
+
+                                $utilities->redirect("todo.php?aid=".$aid, 3);
+
+                            } else {
+
+                                $success = false;
+                                $notice = "Error while updating loose task";
                             }
-
-                            if ($firstAssigned != $reassigned) {
-                                // reassign todo
-                                $notifications->newTodoNotify(array($users->getUserEmail($reassigned)), $aid, $title, $description, $utilities->formatRemainingDate($expire, SHORT_DATE_FORMAT), $users->getUserEmail($session->get("userid")));
-                                $todoChanged = true;
-                            }
-
-                            if ($firstStatus != $status) { 
-                                $todoChanged = true;
-                            }
-
-                            if ($firstDate != $expire) { 
-                                $todoChanged = true;
-                            }
-
-                            $notice .= "Loose task successfully updated.";
-
-
-                            $todoRedirection = true;
-
-                            $utilities->redirect("todo.php?aid=".$aid, 3);
 
                         } else {
 
                             $success = false;
-                            $notice = "Error while updating loose task";
+                            $notice = "Enter all required information";
                         }
-
-                    } else {
-
-                        $success = false;
-                        $notice = "Enter all required information";
                     }
+
+                } else {
+                    // account permission problem
+                    $utilities->redirect("error.php?code=5");
                 }
 
             } else {
-
                 // todo not specified
                 $utilities->redirect("error.php?code=10");
             }
@@ -114,7 +120,9 @@
             // permission problem
             $utilities->redirect("error.php?code=5");
         }
-        
+
+
+    
     } else {
         // user not loged
         $utilities->redirect("error.php?code=12");

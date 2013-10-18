@@ -238,5 +238,22 @@ class Project extends Database {
             return false;
         }
     }
+
+    /**
+     * Check if project belong to the account
+     * @param number $pid Project ID.
+     * @param number $account Account ID.
+     * @return boolean true if project belong to the account or false if not.
+     */
+    public function isAccountProject($pid, $account) {
+        $query = "SELECT account FROM projects WHERE id=".$pid;
+        $data = $this->select($query);
+
+        if($data[0]["account"] == $account) {
+            return true;
+        } else {
+            return false;
+        }
+    }
 	
 }

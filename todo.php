@@ -7,243 +7,250 @@
 
             $aid = $utilities->filter($_GET["aid"]);
 
-            $todo = $todos->getTodo($aid);
+            if ($todos->isAccountTodo($aid, $session->get("account"))) {
 
-            $firstAssigned = $todos->getAssignedTodoUser($aid);
-            $firstStatus = $todos->getTodoStatus($aid);
-            $firstPriority = $todos->getTodoPriority($aid);
+                $todo = $todos->getTodo($aid);
 
-            $todoChanged = false;
-            $todoRedirection = false;
+                $firstAssigned = $todos->getAssignedTodoUser($aid);
+                $firstStatus = $todos->getTodoStatus($aid);
+                $firstPriority = $todos->getTodoPriority($aid);
 
-            /* todo update */
-            if ($utilities->isPost()) {
+                $todoChanged = false;
+                $todoRedirection = false;
 
-                $author = $session->get("userid");
-                $assigned = $todo[0]["assigned"];
-                $created = $utilities->getDate(); 
+                /* todo update */
+                if ($utilities->isPost()) {
 
-                if (!empty($_POST["todo-update-descriptions"])) {
-                    $description = $utilities->filter($_POST["todo-update-descriptions"]);
-                }              
-                
-                $expire = $utilities->filter($_POST["radioA"]);
-                $status = $utilities->filter($_POST["radioB"]);
-                $reassigned = $utilities->filter($_POST["selected-user"]);
-                
-                $expire = $utilities->setExpirationTime($expire);
-                $completed = $utilities->getDate();
+                    $author = $session->get("userid");
+                    $assigned = $todo[0]["assigned"];
+                    $created = $utilities->getDate(); 
 
-                $priority = $utilities->filter($_POST["priority"]);
+                    if (!empty($_POST["todo-update-descriptions"])) {
+                        $description = $utilities->filter($_POST["todo-update-descriptions"]);
+                    }              
+                    
+                    $expire = $utilities->filter($_POST["radioA"]);
+                    $status = $utilities->filter($_POST["radioB"]);
+                    $reassigned = $utilities->filter($_POST["selected-user"]);
+                    
+                    $expire = $utilities->setExpirationTime($expire);
+                    $completed = $utilities->getDate();
 
-                $fileTempName = $_FILES["file"]["tmp_name"][0];
+                    $priority = $utilities->filter($_POST["priority"]);
 
-                $allFiles = $utilities->reArrayFiles($_FILES['file']);
+                    $fileTempName = $_FILES["file"]["tmp_name"][0];
 
-                $managerEmail = $users->getUserEmail($todo[0]["author"]);
+                    $allFiles = $utilities->reArrayFiles($_FILES['file']);
 
-                // update text and file
-                if (!empty($description) || ($allFiles[0]['tmp_name'] != "")) {
+                    $managerEmail = $users->getUserEmail($todo[0]["author"]);
 
-                    if (empty($description)) {
-                        $description = "<p></p>";
-                    }
+                    // update text and file
+                    if (!empty($description) || ($allFiles[0]['tmp_name'] != "")) {
 
-                    $update = $updates->createUpdate($session->get("account"), $description, 0, 0, $aid, $author, $assigned, $created, 1);
+                        if (empty($description)) {
+                            $description = "<p></p>";
+                        }
 
-                    if (is_numeric($update)) {
+                        $update = $updates->createUpdate($session->get("account"), $description, 0, 0, $aid, $author, $assigned, $created, 1);
 
-                        // add file
-                        if (!empty($allFiles[0]['tmp_name'])) {
+                        if (is_numeric($update)) {
 
-                            $uploadedFiles = array();
+                            // add file
+                            if (!empty($allFiles[0]['tmp_name'])) {
 
-                            foreach ($allFiles as $file) {
+                                $uploadedFiles = array();
 
-                                $fileIdentifier = $utilities->createFileName($utilities->getDate()."_".$file['name']);
-                                $filePath = UPLOAD."todo/".$aid."/".$fileIdentifier;
+                                foreach ($allFiles as $file) {
 
-                                $uploadStatus = $uploads->uploadTodoFile($aid, $fileIdentifier, $file['tmp_name']);
+                                    $fileIdentifier = $utilities->createFileName($utilities->getDate()."_".$file['name']);
+                                    $filePath = UPLOAD."todo/".$aid."/".$fileIdentifier;
 
-                                if ($uploadStatus) {
+                                    $uploadStatus = $uploads->uploadTodoFile($aid, $fileIdentifier, $file['tmp_name']);
 
-                                    $uid = $update;
+                                    if ($uploadStatus) {
 
-                                    $uploadUpdate = $uploads->createUpload($session->get("account"), $file['name'], $fileIdentifier, $file['size'], $file['type'], $filePath, 0, 0, $aid, $uid, $author, $created, 1);
+                                        $uid = $update;
 
-                                    $notice .= "File <b>".$file['name']."</b> was successfully uploaded <br>";
+                                        $uploadUpdate = $uploads->createUpload($session->get("account"), $file['name'], $fileIdentifier, $file['size'], $file['type'], $filePath, 0, 0, $aid, $uid, $author, $created, 1);
 
-                                    array_push($uploadedFiles, $filePath);
-                                
-                                } else {
+                                        $notice .= "File <b>".$file['name']."</b> was successfully uploaded <br>";
 
-                                    if(!empty($file['tmp_name'])) {
+                                        array_push($uploadedFiles, $filePath);
+                                    
+                                    } else {
 
-                                        $notice .= "Error while uploading file: <b>".$file['name']."</b><br>";
+                                        if(!empty($file['tmp_name'])) {
+
+                                            $notice .= "Error while uploading file: <b>".$file['name']."</b><br>";
+
+                                        }
 
                                     }
 
                                 }
+                            }
+
+                            // text update notification
+                            if($description != "<p></p>") {
+                                
+                                /* notifications */
+                                $notifications->todoUpdateNotify(array($users->getUserEmail($assigned)), $aid, $todo[0]["title"], $description, $session->get("firstname"), $users->getUserEmail($author));
+
+                                $notice .= "Loose task successfully updated <br>";
+                            }
+
+                            if(!empty($fileTempName)) {
+
+                                // todo file notify
+                                $notifications->todoFileNotify(array($users->getUserEmail($assigned)), $aid, $todo[0]["title"], $uploadedFiles, $session->get("firstname"), $users->getUserEmail($author));
 
                             }
-                        }
-
-                        // text update notification
-                        if($description != "<p></p>") {
-                            
-                            /* notifications */
-                            $notifications->todoUpdateNotify(array($users->getUserEmail($assigned)), $aid, $todo[0]["title"], $description, $session->get("firstname"), $users->getUserEmail($author));
-
-                            $notice .= "Loose task successfully updated <br>";
-                        }
-
-                        if(!empty($fileTempName)) {
-
-                            // todo file notify
-                            $notifications->todoFileNotify(array($users->getUserEmail($assigned)), $aid, $todo[0]["title"], $uploadedFiles, $session->get("firstname"), $users->getUserEmail($author));
 
                         }
+
+                        // redirect after update
+                        $todoRedirection = true;
 
                     }
 
-                    // redirect after update
-                    $todoRedirection = true;
+                    // update todo settings 
+                    if (!empty($reassigned) && !empty($expire) && !empty($status)) {
 
-                }
+                        $todoUpdate = $todos->updateTodo($aid, $reassigned, $expire, $priority, $status);
 
-                // update todo settings 
-                if (!empty($reassigned) && !empty($expire) && !empty($status)) {
+                        if ($todoUpdate) {
 
-                    $todoUpdate = $todos->updateTodo($aid, $reassigned, $expire, $priority, $status);
+                            // update todo status
+                            if ($status == 2 || $status == 3) {
 
-                    if ($todoUpdate) {
+                                $todoComplete = $todos->completeTodo($aid, $session->get("userid"), $completed);
 
-                        // update todo status
-                        if ($status == 2 || $status == 3) {
+                                $todoChanged = true;
+                                $todoRedirection = true;
 
-                            $todoComplete = $todos->completeTodo($aid, $session->get("userid"), $completed);
+                                if ($firstStatus == "OPEN") { 
 
-                            $todoChanged = true;
-                            $todoRedirection = true;
+                                    $todoChanged = true;
+                                }
 
-                            if ($firstStatus == "OPEN") { 
+                            }
+
+                            if ($firstPriority != $priority) { 
 
                                 $todoChanged = true;
                             }
 
-                        }
+                            // todo reassign notification
+                            if ($firstAssigned != $reassigned) {
+                                
+                                $notifications->newTodoNotify(array($users->getUserEmail($reassigned)), $aid, $todo[0]["title"], $todo[0]["description"], $utilities->formatRemainingDate($expire, SHORT_DATE_FORMAT), $users->getUserEmail($session->get("userid")));
+                                    $todoChanged = true;
 
-                        if ($firstPriority != $priority) { 
-
-                            $todoChanged = true;
-                        }
-
-                        // todo reassign notification
-                        if ($firstAssigned != $reassigned) {
-                            
-                            $notifications->newTodoNotify(array($users->getUserEmail($reassigned)), $aid, $todo[0]["title"], $todo[0]["description"], $utilities->formatRemainingDate($expire, SHORT_DATE_FORMAT), $users->getUserEmail($session->get("userid")));
                                 $todoChanged = true;
 
-                            $todoChanged = true;
+                            }
 
-                        }
+                            // todo changes notification
+                            if($todoChanged){
+                                
+                                $notifications->todoChangeNotify(array($managerEmail), $aid, $todo[0]["title"], $users->getUserFirstName($session->get("userid")), $users->getUserEmail($author));
 
-                        // todo changes notification
-                        if($todoChanged){
+                                $notice .= "Loose task successfully changed <br>";
+                            }
+
                             
-                            $notifications->todoChangeNotify(array($managerEmail), $aid, $todo[0]["title"], $users->getUserFirstName($session->get("userid")), $users->getUserEmail($author));
 
-                            $notice .= "Loose task successfully changed <br>";
+                        } else {
+
+                            $notice .= "Error while changing loose task <br>";
+
+                        }
+                    }
+                    
+                }
+
+                /* assignment update delete */
+
+                // delete update 
+                if ($utilities->isGet() && !empty($_GET["action"]) && !empty($_GET["context"]) && !empty($_GET["uid"])) {
+                    
+                    $uid = $utilities->filter($_GET["uid"]);
+                    $action = $utilities->filter($_GET["action"]);
+                    $context = $utilities->filter($_GET["context"]);
+
+                    if ($updates->isUpdateAuthor($uid, $session->get("userid")) && $action == "delete" && $context == "update-file") {
+
+                        $updates->deleteUpdate($uid);
+
+                        $updateFiles = $uploads->getUpdateUploads(0, 0, $uid);
+
+                        if ($updateFiles) {
+
+                            for ($i=0; $i<count($updateFiles); $i++) {
+
+                            $updateFile = $uploads->getUpload($updateFiles[$i]["id"]);
+
+                            @unlink($updateFile[0]["path"]);
+
+                            }
+
+                            $uploads->deleteUploads(0, 0, $uid);
+
                         }
 
-                        
+                        $notice .= "Loose task update deleted <br>";
 
                     } else {
 
-                        $notice .= "Error while changing loose task <br>";
+                        $notice .= "You cannot delete this update <br>";
 
                     }
                 }
-                
-            }
 
-            /* assignment update delete */
+                /* todo file delete */
 
-            // delete update 
-            if ($utilities->isGet() && !empty($_GET["action"]) && !empty($_GET["context"]) && !empty($_GET["uid"])) {
-                
-                $uid = $utilities->filter($_GET["uid"]);
-                $action = $utilities->filter($_GET["action"]);
-                $context = $utilities->filter($_GET["context"]);
+                // delete todo file
+                if ($utilities->isGet() && !empty($_GET["action"]) && !empty($_GET["context"]) && !empty($_GET["fid"])) {
+                    
+                    $fid = $utilities->filter($_GET["fid"]);
+                    $action = $utilities->filter($_GET["action"]);
+                    $context = $utilities->filter($_GET["context"]);
 
-                if ($updates->isUpdateAuthor($uid, $session->get("userid")) && $action == "delete" && $context == "update-file") {
+                    if ($users->isAdmin($session->get("userid")) && $action == "delete" && $context == "todo-file") {
 
-                    $updates->deleteUpdate($uid);
-
-                    $updateFiles = $uploads->getUpdateUploads(0, 0, $uid);
-
-                    if ($updateFiles) {
-
-                        for ($i=0; $i<count($updateFiles); $i++) {
-
-                        $updateFile = $uploads->getUpload($updateFiles[$i]["id"]);
+                        $updateFile = $uploads->getUpload($fid);
 
                         @unlink($updateFile[0]["path"]);
 
-                        }
+                        $uploads->deleteUpload($updateFile[0]["id"]);
 
-                        $uploads->deleteUploads(0, 0, $uid);
+
+                        $notice .= "Loose task file deleted <br>";
+
+                    } else {
+
+                        $notice .= "You cannot delete this file <br>";
 
                     }
+                }
 
-                    $notice .= "Loose task update deleted <br>";
+                /* todo information */
+                $todo = $todos->getTodo($aid);
+                $allUsers = $users->listAllUsers($session->get("account"));
+                $user = $users->getUser($todo[0]["assigned"]);
+
+                if (isset($todo)) {
+
+                    $todoUpdates = $updates->listAllTodoUpdates($aid);
 
                 } else {
-
-                    $notice .= "You cannot delete this update <br>";
-
+                    // todo not exist
+                    $utilities->redirect("error.php?code=7");
                 }
-            }
-
-            /* todo file delete */
-
-            // delete todo file
-            if ($utilities->isGet() && !empty($_GET["action"]) && !empty($_GET["context"]) && !empty($_GET["fid"])) {
-                
-                $fid = $utilities->filter($_GET["fid"]);
-                $action = $utilities->filter($_GET["action"]);
-                $context = $utilities->filter($_GET["context"]);
-
-                if ($users->isAdmin($session->get("userid")) && $action == "delete" && $context == "todo-file") {
-
-                    $updateFile = $uploads->getUpload($fid);
-
-                    @unlink($updateFile[0]["path"]);
-
-                    $uploads->deleteUpload($updateFile[0]["id"]);
-
-
-                    $notice .= "Loose task file deleted <br>";
-
-                } else {
-
-                    $notice .= "You cannot delete this file <br>";
-
-                }
-            }
-
-            /* todo information */
-            $todo = $todos->getTodo($aid);
-            $allUsers = $users->listAllUsers($session->get("account"));
-            $user = $users->getUser($todo[0]["assigned"]);
-
-            if (isset($todo)) {
-
-                $todoUpdates = $updates->listAllTodoUpdates($aid);
 
             } else {
-                // todo not exist
-                $utilities->redirect("error.php?code=7");
+                // account permission problem
+                $utilities->redirect("error.php?code=5");
             }
 
         } else {

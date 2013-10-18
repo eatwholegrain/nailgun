@@ -7,52 +7,59 @@
 
             $pid = $utilities->filter($_GET["pid"]);
 
-            // open or close project
-            if ($utilities->isGet() && !empty($_GET["action"]) && $users->isOwner($session->get("userid"))) {
-                    
-                $action = $utilities->filter($_GET["action"]);
-                $completed = $utilities->getDate();
+            if ($projects->isAccountProject($pid, $session->get("account"))) {
 
-                if ($action == "close") {
+                // open or close project
+                if ($utilities->isGet() && !empty($_GET["action"]) && $users->isOwner($session->get("userid"))) {
+                        
+                    $action = $utilities->filter($_GET["action"]);
+                    $completed = $utilities->getDate();
 
-                    $closingStatus = $projects->closeProject($pid, $session->get("userid"), $completed);
+                    if ($action == "close") {
 
-                    if ($closingStatus) {
+                        $closingStatus = $projects->closeProject($pid, $session->get("userid"), $completed);
 
-                        $tasks->closeAllProjectTasks($pid, $session->get("userid"), $completed);
-                        $notice = "Project and all project tasks are closed";
+                        if ($closingStatus) {
+
+                            $tasks->closeAllProjectTasks($pid, $session->get("userid"), $completed);
+                            $notice = "Project and all project tasks are closed";
+                        }
+                        
+                    } else if ($action == "open"){
+
+                        $projects->openProject($pid);
+                        $notice = "Project is open again. Please open all required tasks";
+
+                    } 
+                }
+
+                // who can view projects
+                if ($roles->canViewProject($_GET["pid"], $session->get("userid")) && ($projects->isProjectOpen($pid) || $users->isOwner($session->get("userid")))) {
+
+                    $project = $projects->getProject($pid);
+
+                    if (isset($project)) {
+
+                        $activeTasks = $tasks->listActiveTasks($pid);
+                        $resolvedTasks = $tasks->listResolvedTasks($pid);
+                        $closedTasks = $tasks->listClosedTasks($pid);
+
+                    } else {
+                        // project not exist
+                        $utilities->redirect("error.php?code=6");
                     }
                     
-                } else if ($action == "open"){
-
-                    $projects->openProject($pid);
-                    $notice = "Project is open again. Please open all required tasks";
-
-                } 
-            }
-
-            // who can view projects
-            if ($roles->canViewProject($_GET["pid"], $session->get("userid")) && ($projects->isProjectOpen($pid) || $users->isOwner($session->get("userid")))) {
-
-                $project = $projects->getProject($pid);
-
-                if (isset($project)) {
-
-                    $activeTasks = $tasks->listActiveTasks($pid);
-                    $resolvedTasks = $tasks->listResolvedTasks($pid);
-                    $closedTasks = $tasks->listClosedTasks($pid);
+                    if(empty($notice)) {
+                        $notice = "Welcome to <b>".$project[0]["title"]."</b> project<b>";
+                    }
 
                 } else {
-                    // project not exist
-                    $utilities->redirect("error.php?code=6");
-                }
-                
-                if(empty($notice)) {
-                    $notice = "Welcome to <b>".$project[0]["title"]."</b> project<b>";
+                    // permission problem
+                    $utilities->redirect("error.php?code=5");
                 }
 
             } else {
-                // permission problem
+                // account permission problem
                 $utilities->redirect("error.php?code=5");
             }
 

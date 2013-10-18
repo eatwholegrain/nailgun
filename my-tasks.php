@@ -103,9 +103,7 @@
         });
 
         <?php if (defined("AUTOSCROLL") && AUTOSCROLL && $assignment) { ?>
-
             $("html, body").animate({ scrollTop: $(document).height()-100 }, 2000);
-
         <?php } ?>
         
     })   

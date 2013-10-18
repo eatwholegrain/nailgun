@@ -61,8 +61,8 @@ class Todo extends Database {
      * @param boolean $boolean Boolean desc.
      * @return mixed description
      */
-    public function listUserTodos($account, $uid, $status) {
-        $query = "SELECT * FROM todos WHERE account=".$account." AND assigned=".$uid." AND status=".$status." ORDER BY expire ASC, created DESC";
+    public function listUserTodos($account, $uid, $status, $order="expire", $sort="ASC") {
+        $query = "SELECT * FROM todos WHERE account=".$account." AND assigned=".$uid." AND status=".$status." ORDER BY ".$order." ".$sort.", created DESC";
         $data = $this->select($query);
         return $data;
     }
@@ -344,6 +344,23 @@ class Todo extends Database {
         $data = $this->select($query);
 
         if ($this->getNumRows($data) == 0) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    /**
+     * Check if todo belong to the account
+     * @param number $aid Todo ID.
+     * @param number $account Account ID.
+     * @return boolean true if todo belong to the account or false if not.
+     */
+    public function isAccountTodo($aid, $account) {
+        $query = "SELECT account FROM todos WHERE id=".$aid;
+        $data = $this->select($query);
+
+        if($data[0]["account"] == $account) {
             return true;
         } else {
             return false;

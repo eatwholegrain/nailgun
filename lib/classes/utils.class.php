@@ -226,7 +226,7 @@ class Utils {
      * @param boolean $boolean Boolean desc.
      * @return mixed description
      */
-    public function formatDate($date, $format){
+    public function formatDate($date, $format, $expiredPrefix="Expired"){
         if($date == 1924902000) {
             return "Whenever";
         } else if (date("d", $date) == date("d") && date("m", $date) == date("m") && date("Y", $date) == date("Y")) {
@@ -234,7 +234,7 @@ class Utils {
         } else if (date("d", $date) == date("d")+1 && date("m", $date) == date("m") && date("Y", $date) == date("Y")) {
             return "Tommorow";
         } else if ($this->getDate() > $date){
-            return "Expired ".$this->elapsedTime($date);
+            return $expiredPrefix." ".$this->elapsedTime($date);
             //return "Expired on ".date("d. F", $date);
         } else {
             return date($format, $date);
@@ -259,7 +259,7 @@ class Utils {
      * @param boolean $boolean Boolean desc.
      * @return mixed description
      */
-    public function formatRemainingDate($date, $format){
+    public function formatRemainingDate($date, $format, $expiredPrefix="Expired"){
         if($date == 1924902000) {
             return "Whenever";
         } else if (date("d", $date) == date("d") && date("m", $date) == date("m") && date("Y", $date) == date("Y")) {
@@ -267,7 +267,7 @@ class Utils {
         } else if (date("d", $date) == date("d")+1 && date("m", $date) == date("m") && date("Y", $date) == date("Y")) {
             return "Tommorow";
         } else if ($this->getDate() > $date){
-            return "Expired ".$this->elapsedTime($date);
+            return $expiredPrefix." ".$this->elapsedTime($date);
             //return "Expired on ".date("d. F", $date);
         } else {
             $remaining = $this->remainingDate($this->getDate(), $date);
@@ -659,15 +659,12 @@ class Utils {
      * @param boolean $boolean Boolean desc.
      * @return mixed description
      */
-    public function encrypt($string){
-        $key = "9fuXh8YVP66GMnd";
-        for($i=0; $i < strlen($string); $i++) {
-            $char = substr($string, $i, 1);
-            $keychar = substr($key, ($i % strlen($key))-1, 1);
-            $char = chr(ord($char) + ord($keychar));
-            $result.= $char;
-        }
-        return urlencode(base64_encode($result));
+    public function encrypt($string) {
+        $encryption_key = ENC_KEY;
+        $iv_size = mcrypt_get_iv_size(MCRYPT_BLOWFISH, MCRYPT_MODE_CBC);
+        $iv = mcrypt_create_iv($iv_size, MCRYPT_RAND);
+        $encrypted_string = mcrypt_encrypt(MCRYPT_BLOWFISH, $encryption_key, utf8_encode($string), MCRYPT_MODE_CBC, $iv);
+        return $encrypted_string;
     }
 
     /**
@@ -677,18 +674,43 @@ class Utils {
      * @param boolean $boolean Boolean desc.
      * @return mixed description
      */
-    public function decrypt($string){
-        $string = base64_decode(urldecode($string));
-        $result = "";
-        $key = "9fuXh8YVP66GMnd";
-        for($i=0; $i < strlen($string); $i++) {
-            $char = substr($string, $i, 1);
-            $keychar = substr($key, ($i % strlen($key))-1, 1);
-            $char = chr(ord($char) - ord($keychar));
-            $result.= $char;
-        }
-        return $result;
+    public function decrypt($string) {
+        $encryption_key = ENC_KEY;
+        $iv_size = mcrypt_get_iv_size(MCRYPT_BLOWFISH, MCRYPT_MODE_CBC);
+        $iv = mcrypt_create_iv($iv_size, MCRYPT_RAND);
+        $decrypted_string = mcrypt_decrypt(MCRYPT_BLOWFISH, $encryption_key, $string, MCRYPT_MODE_CBC, $iv);
+        return $decrypted_string;
     }
+
+    /**
+     * -.
+     * @param string $string String desc.
+     * @param number $number Number desc.
+     * @param boolean $boolean Boolean desc.
+     * @return mixed description
+     */
+    public function obfuscate($string) {
+        $key = ENC_KEY;
+        $string = base_convert($string, 10, 36);
+        $data = mcrypt_encrypt(MCRYPT_BLOWFISH, $key, $string, 'ecb');
+        $data = bin2hex($data);
+        return $data;
+    }
+
+    /**
+     * -.
+     * @param string $string String desc.
+     * @param number $number Number desc.
+     * @param boolean $boolean Boolean desc.
+     * @return mixed description
+     */
+    public function deobfuscate($string) {
+        $key = ENC_KEY;
+        $data = pack('H*', $string); // Translate back to binary
+        $data = mcrypt_decrypt(MCRYPT_BLOWFISH, $key, $data, 'ecb');
+        $data = base_convert($data, 36, 10);
+        return $data;
+        }
 
     /**
      * -.
