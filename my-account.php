@@ -248,9 +248,12 @@ type='text/javascript';e.parentNode.insertBefore($,e)})(document,'script');
                                         <p>Assigned to projects as</p>
                                     </div>
                                     <div class="check-table-col2">
-                                        <p>User</p>
+                                        <p>Client</p>
                                     </div>
-                                    <div class="check-table-col3">
+                                    <div class="check-table-col2">
+                                        <p>Worker</p>
+                                    </div>
+                                    <div class="check-table-col2">
                                         <p>Manager</p>
                                     </div>
                                 </div>
@@ -261,16 +264,19 @@ type='text/javascript';e.parentNode.insertBefore($,e)})(document,'script');
                                 ?>
 
                                     <?php
-                                    if($roles->isProjectUser($allProjects[$i]["id"], $user[0]["id"]) || $roles->isProjectManager($allProjects[$i]["id"], $user[0]["id"])) {
+                                    if($roles->isProjectClient($allProjects[$i]["id"], $user[0]["id"]) || $roles->isProjectUser($allProjects[$i]["id"], $user[0]["id"]) || $roles->isProjectManager($allProjects[$i]["id"], $user[0]["id"])) {
                                     ?>
                                     <div class="check-table-row">
                                         <div class="check-table-col1">
                                             <p><?php echo $allProjects[$i]["title"]; ?></p>
                                         </div>
                                         <div class="check-table-col2">
+                                            <p><?php if ($roles->isProjectClient($allProjects[$i]["id"], $user[0]["id"])) { ?><img src="images/check.png"><?php } ?></p>
+                                        </div>
+                                        <div class="check-table-col2">
                                             <p><?php if ($roles->isProjectUser($allProjects[$i]["id"], $user[0]["id"])) { ?><img src="images/check.png"><?php } ?></p>
                                         </div>
-                                        <div class="check-table-col3">
+                                        <div class="check-table-col2">
                                             <p><?php if ($roles->isProjectManager($allProjects[$i]["id"], $user[0]["id"])) { ?><img src="images/check.png"><?php } ?></p>
                                         </div>
                                     </div>

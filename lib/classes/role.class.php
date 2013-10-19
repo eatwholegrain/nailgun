@@ -15,6 +15,7 @@ class Role extends Database {
     public $data;
     public $isProjectManager;
     public $isProjectUser;
+    public $isProjectClient;
     public $isAssigned;
     public $isTaskAssigned;
     public $isTodoAssigned;
@@ -41,7 +42,7 @@ class Role extends Database {
         $query = "SELECT role FROM roles WHERE project=".$pid." AND user=".$uid." ORDER BY id DESC LIMIT 1";
         $data = $this->select($query);
 
-        if($data[0]["role"] == 1 || $data[0]["role"] == 2){
+        if($data[0]["role"] == 1 || $data[0]["role"] == 2 || $data[0]["role"] == 3){
             return $data[0]["role"];
         } else {
             return 0;
@@ -225,12 +226,44 @@ class Role extends Database {
      * @param boolean $boolean Boolean desc.
      * @return mixed description
      */
+    public function isProjectClient($pid, $uid){
+        $query = "SELECT role FROM roles WHERE project=".$pid." AND user=".$uid." ORDER BY id DESC LIMIT 1";
+        $data = $this->select($query);
+
+        if($data[0]["role"] == 3){
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    /**
+     * -.
+     * @param string $string String desc.
+     * @param number $number Number desc.
+     * @param boolean $boolean Boolean desc.
+     * @return mixed description
+     */
+    public function getProjectClients($pid){
+        $query = "SELECT user FROM roles WHERE project=".$pid." AND role=3";
+        $data = $this->select($query);
+        return $data;
+    }
+
+    /**
+     * -.
+     * @param string $string String desc.
+     * @param number $number Number desc.
+     * @param boolean $boolean Boolean desc.
+     * @return mixed description
+     */
     public function canViewProject($pid, $uid){
         $isProjectManager = $this->isProjectManager($pid, $uid);
         $isProjectUser = $this->isProjectUser($pid, $uid);
-        $isGlobalAdmin = $this->isGlobalAdmin($uid);
+        $isProjectClient = $this->isProjectClient($pid, $uid);
+        $isAdmin = $this->isGlobalAdmin($uid);
 
-        if($isProjectManager || $isProjectUser || $isGlobalAdmin){
+        if ($isProjectManager || $isProjectUser || $isProjectClient || $isAdmin) {
             return true;
         } else {
             return false;
@@ -249,7 +282,7 @@ class Role extends Database {
         $data = $this->select($query);
         $isAssigned = $this->getNumRows($data);
 
-        if($isAssigned > 0){
+        if ($isAssigned > 0){
             return true;
         } else {
             return false;
@@ -266,10 +299,11 @@ class Role extends Database {
     public function canUpdateTask($pid, $tid, $uid){
         $isProjectManager = $this->isProjectManager($pid, $uid);
         $isProjectUser = $this->isProjectUser($pid, $uid);
+        $isProjectClient = $this->isProjectClient($pid, $uid);
         $isTaskAssigned = $this->isTaskAssigned($tid, $uid);
-        $isGlobalAdmin = $this->isGlobalAdmin($uid);
+        $isAdmin = $this->isGlobalAdmin($uid);
 
-        if($isProjectManager || $isProjectUser || $isTaskAssigned || $isGlobalAdmin){
+        if ($isProjectManager || $isProjectUser || $isProjectClient || $isTaskAssigned || $isAdmin){
             return true;
         } else {
             return false;
@@ -286,9 +320,9 @@ class Role extends Database {
     public function canChangeTask($pid, $tid, $uid){
         $isProjectManager = $this->isProjectManager($pid, $uid);
         $isTaskAssigned = $this->isTaskAssigned($tid, $uid);
-        $isGlobalAdmin = $this->isGlobalAdmin($uid);
+        $isAdmin = $this->isGlobalAdmin($uid);
 
-        if($isProjectManager || $isTaskAssigned || $isGlobalAdmin ){
+        if ($isProjectManager || $isTaskAssigned || $isAdmin ){
             return true;
         } else {
             return false;
@@ -304,9 +338,9 @@ class Role extends Database {
      */
     public function canCloseTask($pid, $tid, $uid){
         $isProjectManager = $this->isProjectManager($pid, $uid);
-        $isGlobalAdmin = $this->isGlobalAdmin($uid);
+        $isAdmin = $this->isGlobalAdmin($uid);
 
-        if($isProjectManager || $isGlobalAdmin ){
+        if ($isProjectManager || $isAdmin ){
             return true;
         } else {
             return false;
@@ -325,7 +359,7 @@ class Role extends Database {
         $data = $this->select($query);
         $isAssigned = $this->getNumRows($data);
 
-        if($isAssigned > 0){
+        if ($isAssigned > 0){
             return true;
         } else {
             return false;
@@ -343,7 +377,7 @@ class Role extends Database {
         $query = "SELECT role FROM users WHERE id='".$uid."' LIMIT 1";
         $data = $this->select($query);
 
-        if($data[0]["role"] == 1){
+        if ($data[0]["role"] == 1){
             return true;
         } else {
             return false;
@@ -361,7 +395,7 @@ class Role extends Database {
         $query = "SELECT role FROM users WHERE id='".$uid."' LIMIT 1";
         $data = $this->select($query);
 
-        if($data[0]["role"] == 1 || $data[0]["role"] == 2){
+        if ($data[0]["role"] == 1 || $data[0]["role"] == 2){
             return true;
         } else {
             return false;

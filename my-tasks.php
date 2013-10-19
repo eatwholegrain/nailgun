@@ -224,7 +224,7 @@
                         <li data-id="<?php echo $allActiveUserTasks[$i]["id"]; ?>" data-expire="<?php echo $allActiveUserTasks[$i]["expire"]; ?>" data-created="<?php echo $allActiveUserTasks[$i]["created"]; ?>" data-assigned="<?php echo $users->getShortUserName($tasks->getAssignedTaskUser($activeTasksProject[0]["id"], $allActiveUserTasks[$i]["id"])); ?>" data-title="<?php echo $allActiveUserTasks[$i]["title"]; ?>" data-project="<?php echo $projects->getProjectTitle($activeTasksProject[0]["id"]);?>" data-projectid="<?php echo $projects->getProjectId($activeTasksProject[0]["id"]);?>">
 
                         <!-- task -->
-                        <div class="task task-bg <?php if ($tasks->isTaskHasPriority($allActiveUserTasks[$i]["project"], $allActiveUserTasks[$i]["id"])) { echo 'high'; } ?> <?php echo $utilities->setColorClass($allActiveUserTasks[$i]["expire"]); ?>">
+                        <div class="task task-bg <?php if ($tasks->isTaskHasPriority($allActiveUserTasks[$i]["project"], $allActiveUserTasks[$i]["id"])) { echo 'high'; } ?> <?php echo $utilities->setColorClass($allActiveUserTasks[$i]["expire"]); ?> <?php if ($tasks->isTaskPrivate($allActiveUserTasks[$i]["project"], $allActiveUserTasks[$i]["id"])) { echo 'private'; } ?>">
                             <div class="task-title <?php if($tasks->isTaskExpired($allActiveUserTasks[$i]["project"], $allActiveUserTasks[$i]["id"])){ echo'striked';} ?>">
                                 <p><a class="tip" href="task.php?tid=<?php echo $allActiveUserTasks[$i]["id"]; ?>&pid=<?php echo $allActiveUserTasks[$i]["project"]; ?>" role="link" title="<?php echo strip_tags($allActiveUserTasks[$i]["description"]); ?>"><?php echo $allActiveUserTasks[$i]["title"]; ?></a></p>
                             </div>

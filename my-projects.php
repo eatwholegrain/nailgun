@@ -243,7 +243,9 @@
 
                     </ul>
                             
-
+                    <?php 
+                    if ($users->isAdmin($session->get("userid"))) {
+                    ?>
                     <!-- project header -->
                     <div class="task-header">
                         <div class="task-title">
@@ -256,7 +258,7 @@
 
                     <?php
                     for ($i=0; $i < count($closedProjects); $i++) {
-                        if ($roles->canViewProject($closedProjects[$i]["id"], $session->get("userid"))) {
+                        if ($roles->canViewProject($closedProjects[$i]["id"], $session->get("userid")) && ($projects->isProjectOpen($closedProjects[$i]["id"]) || $users->isAdmin($session->get("userid")))) {
                         ?>
 
                         <li data-id="<?php echo $closedProjects[$i]["id"]; ?>" data-expire="<?php echo $closedProjects[$i]["expire"]; ?>" data-created="<?php echo $closedProjects[$i]["created"]; ?>" data-tasks="<?php echo $tasks->countUserOpenTasks($closedProjects[$i]["id"], $session->get("userid")); ?>" data-title="<?php echo $closedProjects[$i]["title"]; ?>">
@@ -284,6 +286,8 @@
                     <div id="add-first-task" style="margin-bottom: 20px;">
                         <a class="blue-button default-button shadow tip" role="button" href="#" title="There are no open projects assigned to you at this moment" onClick="return false;">There are no open projects assigned to you</a>
                     </div>
+                    <?php } ?>
+
                     <?php } ?>
 
                     <?php 

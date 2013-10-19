@@ -29,6 +29,7 @@
                             $expire = $utilities->filter($_POST["radioA"]);
                             $expire = $utilities->setExpirationTime($expire);
                             $priority = $utilities->filter($_POST["priority"]);
+                            $private = $utilities->filter($_POST["private"]);
 
                             $author = $session->get("userid");
                             $projectTitle = $projects->getProjectTitle($pid);
@@ -38,7 +39,7 @@
 
                             $taskChanged = false;
                             
-                            $task = $tasks->editTask($tid, $title, $description, $reassigned, $expire, $priority, $status);
+                            $task = $tasks->editTask($tid, $title, $description, $reassigned, $expire, $priority, $private, $status);
 
                             if ($task) {
 
@@ -214,6 +215,8 @@
         });
 
         $("#priority").buttonset();
+
+        $("#private").buttonset();
 
         $("#radioA").buttonset();
 
@@ -442,6 +445,22 @@
                         </fieldset>
 
                         <div class="spacer"></div>
+
+                        <div style="<?php if($roles->isProjectClient($task[0]["project"], $session->get("userid"))) { echo 'display: none'; } ?>">
+
+                            <fieldset>
+                                <label class="small-label" for="priority">Mark as Private <a class="tip" href="#" title="Private task is visible only to Project Managers and Workers. Client can't see this task."><img src="images/help.png"></a></label>
+                                <div id="private" style="float: right;">
+                                    <label for="private1">YES</label>
+                                    <input type="radio" id="private1" value="1" name="private" <?php if ($tasks->isTaskPrivate($task[0]["project"], $task[0]["id"])) { echo 'checked'; } ?>>
+                                    <label for="private2">NO</label>
+                                    <input type="radio" id="private2" value="0" name="private" <?php if (!$tasks->isTaskPrivate($task[0]["project"], $task[0]["id"])) { echo 'checked'; } ?>>
+                                </div>
+                            </fieldset>
+
+                            <div class="spacer"></div>
+
+                        </div>
 
                         <fieldset>
                             <a class="orange-button default-button tip" id="edit-task" role="button" href="#" title="Update Task">UPDATE</a>

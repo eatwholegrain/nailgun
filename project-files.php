@@ -582,11 +582,7 @@ type='text/javascript';e.parentNode.insertBefore($,e)})(document,'script');
             <!-- logo -->
             <div id="logo">
                 <div id="export">
-                    <a class="tip export-link" href="rss.php?pid=<?php echo $pid; ?>&tid=<?php echo $tid; ?>&key=<?php echo ACCESS_KEY; ?>" title="View updates for <?php echo $task[0]["title"]; ?> task using RSS channel">RSS</a>
-                    <a class="tip export-link" href="ics.php?pid=<?php echo $pid; ?>&tid=<?php echo $tid; ?>&key=<?php echo ACCESS_KEY; ?>" title="Export calendar in ICS format for <?php echo $task[0]["title"]; ?> task">Export task calendar</a>
-                    <?php if (defined("DISQUS") && DISQUS) { ?>
-                    <a class="tip export-link" href="task-discussion.php?pid=<?php echo $pid; ?>&tid=<?php echo $tid; ?>" title="Task discussion for <?php echo $task[0]["title"]; ?>">Task discussion</a>
-                    <?php } ?>
+                    <a class="tip export-link" href="ics.php?p=<?php echo $utilities->obfuscate($pid); ?>" title="Export calendar in ICS format for <?php echo $project[0]["title"]; ?> project">Export project calendar</a>
                 </div>
                 <img class="ng-logo" src="images/logo.png" alt="<?php echo APPLICATION_TITLE ?> logo" />
             </div>

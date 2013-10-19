@@ -13,294 +13,301 @@
                 $project = $projects->getProject($pid);
                 $task = $tasks->getTask($pid, $tid);
 
-                $taskTitle = $task[0]["title"];
-                $taskDescription = $task[0]["description"];
+                if (!$tasks->isTaskPrivate($pid, $tid) || ($tasks->isTaskPrivate($pid, $tid) && !$roles->isProjectClient($pid, $session->get("userid"))) || $tasks->isTaskMine($pid, $tid, $session->get("userid"))) {
 
-                $firstAssigned = $task[0]["assigned"];
-                $firstStatus = $tasks->getTaskStatus($tid);
-                $firstPriority = $task[0]["priority"];
+                    $taskTitle = $task[0]["title"];
+                    $taskDescription = $task[0]["description"];
 
-                $taskChanged = false;
-                $taskRedirection = false;
+                    $firstAssigned = $task[0]["assigned"];
+                    $firstStatus = $tasks->getTaskStatus($tid);
+                    $firstPriority = $task[0]["priority"];
 
-                /* task update */
-                if ($utilities->isPost()) {
-                	
-                    $author = $session->get("userid");
-                    $assigned = $task[0]["assigned"];
-                    $created = $utilities->getDate();
+                    $taskChanged = false;
+                    $taskRedirection = false;
 
-                    if (!empty($_POST["task-update-descriptions"])) {
-                        $description = $utilities->filter($_POST["task-update-descriptions"]);
-                    }                
-                    
-                    $expire = $utilities->filter($_POST["radioA"]);
-                    $status = $utilities->filter($_POST["radioB"]);
-                    $reassigned = $utilities->filter($_POST["selected-user"]);
-                    
-                    $expire = $utilities->setExpirationTime($expire);
-                    $completed = $utilities->getDate();
+                    /* task update */
+                    if ($utilities->isPost()) {
+                    	
+                        $author = $session->get("userid");
+                        $assigned = $task[0]["assigned"];
+                        $created = $utilities->getDate();
 
-                    $priority = $utilities->filter($_POST["priority"]);
+                        if (!empty($_POST["task-update-descriptions"])) {
+                            $description = $utilities->filter($_POST["task-update-descriptions"]);
+                        }                
+                        
+                        $expire = $utilities->filter($_POST["radioA"]);
+                        $status = $utilities->filter($_POST["radioB"]);
+                        $reassigned = $utilities->filter($_POST["selected-user"]);
+                        
+                        $expire = $utilities->setExpirationTime($expire);
+                        $completed = $utilities->getDate();
 
-                    $managerEmail = $users->getUserEmail($task[0]["author"]);
+                        $priority = $utilities->filter($_POST["priority"]);
 
-                    $fileTempName = $_FILES["file"]["tmp_name"][0];
+                        $managerEmail = $users->getUserEmail($task[0]["author"]);
 
-                    $allFiles = $utilities->reArrayFiles($_FILES['file']);
+                        $fileTempName = $_FILES["file"]["tmp_name"][0];
 
-                    /* update task text */
+                        $allFiles = $utilities->reArrayFiles($_FILES['file']);
 
-                    // update text and file
-                    if (!empty($description) || ($allFiles[0]['tmp_name'] != "")) {
+                        /* update task text */
 
-                        if (empty($description)) {
-                            $description = "<p></p>";
-                        }
+                        // update text and file
+                        if (!empty($description) || ($allFiles[0]['tmp_name'] != "")) {
 
-                        $update = $updates->createUpdate($session->get("account"), $description, $pid, $tid, 0, $author, $assigned, $created, 1);
+                            if (empty($description)) {
+                                $description = "<p></p>";
+                            }
 
-                        $uid = $update;
+                            $update = $updates->createUpdate($session->get("account"), $description, $pid, $tid, 0, $author, $assigned, $created, 1);
 
-                        if (is_numeric($update)) {
+                            $uid = $update;
 
-                            // add file
-                            if (!empty($allFiles[0]['tmp_name'])) {
+                            if (is_numeric($update)) {
 
-                                $uploadedFiles = array();
+                                // add file
+                                if (!empty($allFiles[0]['tmp_name'])) {
 
-                                foreach ($allFiles as $file) {
+                                    $uploadedFiles = array();
 
-                                    $fileIdentifier = $utilities->createFileName($utilities->getDate()."_".$file['name']);
-                                    $filePath = UPLOAD."project/".$pid."/".$tid."/".$fileIdentifier;
+                                    foreach ($allFiles as $file) {
 
-                                    $uploadStatus = $uploads->uploadTaskFile($pid, $tid, $fileIdentifier, $file['tmp_name']);
+                                        $fileIdentifier = $utilities->createFileName($utilities->getDate()."_".$file['name']);
+                                        $filePath = UPLOAD."project/".$pid."/".$tid."/".$fileIdentifier;
 
-                                    if ($uploadStatus) {
+                                        $uploadStatus = $uploads->uploadTaskFile($pid, $tid, $fileIdentifier, $file['tmp_name']);
 
-                                        $uid = $update;
+                                        if ($uploadStatus) {
 
-                                        $uploadUpdate = $uploads->createUpload($session->get("account"), $file['name'], $fileIdentifier, $file['size'], $file['type'], $filePath, $pid, $tid, 0, $uid, $author, $created, 1);
+                                            $uid = $update;
 
-                                        $notice .= "File <b>".$file['name']."</b> was successfully uploaded <br>";
+                                            $uploadUpdate = $uploads->createUpload($session->get("account"), $file['name'], $fileIdentifier, $file['size'], $file['type'], $filePath, $pid, $tid, 0, $uid, $author, $created, 1);
 
-                                        array_push($uploadedFiles, $filePath);
-                                    
-                                    } else {
+                                            $notice .= "File <b>".$file['name']."</b> was successfully uploaded <br>";
 
-                                        if(!empty($file['tmp_name'])) {
+                                            array_push($uploadedFiles, $filePath);
+                                        
+                                        } else {
 
-                                            $notice .= "Error while uploading file: <b>".$file['name']."</b><br>";
+                                            if(!empty($file['tmp_name'])) {
+
+                                                $notice .= "Error while uploading file: <b>".$file['name']."</b><br>";
+
+                                            }
 
                                         }
 
                                     }
+                                }
+
+                                /* notifications */
+
+                                $projectManagers = $roles->getProjectManagers($pid);
+
+                                // text update notification
+                                if($description != "<p></p>") {
+                                    
+                                    /* notify all managers */
+                                    /*
+                                    for($i=0; $i<count($projectManagers); $i++) {
+
+                                        $notifications->taskUpdateNotify(array($users->getUserEmail($projectManagers[$i]["user"])), $project[0]["title"], $task[0]["title"], $description, $session->get("firstname"), $pid, $tid, $users->getUserEmail($author));
+
+                                    }
+                                    */
+                                    /* notify assigned user */
+                                    /*
+                                    if (!$roles->isProjectManager($pid, $assigned)) {
+                                    	
+                                        $notifications->taskUpdateNotify(array($users->getUserEmail($assigned)), $project[0]["title"], $task[0]["title"], $description, $session->get("firstname"), $pid, $tid, $users->getUserEmail($author));
+                                    }
+                                    */
+                                    $notifications->taskUpdateNotify(array($users->getUserEmail($assigned), $managerEmail), $project[0]["title"], $task[0]["title"], $description, $session->get("firstname"), $pid, $tid, $users->getUserEmail($author));
+
+                                    $notice .= "Task successfully updated <br>";
 
                                 }
+
+                                // file update notification
+                                if(!empty($fileTempName)) {
+
+                                    /* notify all managers */
+                                    /*
+                                    for($i=0; $i<count($projectManagers); $i++) {
+
+                                        $notifications->taskFileNotify(array($users->getUserEmail($projectManagers[$i]["user"])), $project[0]["title"], $task[0]["title"], $filePath, $session->get("firstname"), $pid, $tid, $users->getUserEmail($author));
+
+                                    }
+                                    */
+                                    /* notify assigned user */
+                                    /*
+                                    if (!$roles->isProjectManager($pid, $assigned)) {
+                                        $notifications->taskFileNotify(array($users->getUserEmail($assigned)), $project[0]["title"], $task[0]["title"], $filePath, $session->get("firstname"), $pid, $tid, $users->getUserEmail($author));
+                                    }
+                                    */
+                                    $notifications->taskFileNotify(array($users->getUserEmail($assigned), $managerEmail), $project[0]["title"], $task[0]["title"], $uploadedFiles, $session->get("firstname"), $pid, $tid, $users->getUserEmail($author));
+
+                                }
+
                             }
 
-                            /* notifications */
-
-                            $projectManagers = $roles->getProjectManagers($pid);
-
-                            // text update notification
-                            if($description != "<p></p>") {
-                                
-                                /* notify all managers */
-                                /*
-                                for($i=0; $i<count($projectManagers); $i++) {
-
-                                    $notifications->taskUpdateNotify(array($users->getUserEmail($projectManagers[$i]["user"])), $project[0]["title"], $task[0]["title"], $description, $session->get("firstname"), $pid, $tid, $users->getUserEmail($author));
-
-                                }
-                                */
-                                /* notify assigned user */
-                                /*
-                                if (!$roles->isProjectManager($pid, $assigned)) {
-                                	
-                                    $notifications->taskUpdateNotify(array($users->getUserEmail($assigned)), $project[0]["title"], $task[0]["title"], $description, $session->get("firstname"), $pid, $tid, $users->getUserEmail($author));
-                                }
-                                */
-                                $notifications->taskUpdateNotify(array($users->getUserEmail($assigned), $managerEmail), $project[0]["title"], $task[0]["title"], $description, $session->get("firstname"), $pid, $tid, $users->getUserEmail($author));
-
-                                $notice .= "Task successfully updated <br>";
-
-                            }
-
-                            // file update notification
-                            if(!empty($fileTempName)) {
-
-                                /* notify all managers */
-                                /*
-                                for($i=0; $i<count($projectManagers); $i++) {
-
-                                    $notifications->taskFileNotify(array($users->getUserEmail($projectManagers[$i]["user"])), $project[0]["title"], $task[0]["title"], $filePath, $session->get("firstname"), $pid, $tid, $users->getUserEmail($author));
-
-                                }
-                                */
-                                /* notify assigned user */
-                                /*
-                                if (!$roles->isProjectManager($pid, $assigned)) {
-                                    $notifications->taskFileNotify(array($users->getUserEmail($assigned)), $project[0]["title"], $task[0]["title"], $filePath, $session->get("firstname"), $pid, $tid, $users->getUserEmail($author));
-                                }
-                                */
-                                $notifications->taskFileNotify(array($users->getUserEmail($assigned), $managerEmail), $project[0]["title"], $task[0]["title"], $uploadedFiles, $session->get("firstname"), $pid, $tid, $users->getUserEmail($author));
-
-                            }
+                            // redirect after update
+                            $taskRedirection = true;
 
                         }
 
-                        // redirect after update
-                        $taskRedirection = true;
+                        /* update task settings */
 
-                    }
+                        // update settings
+                        if (!empty($reassigned) && !empty($expire) && !empty($status)) {
 
-                    /* update task settings */
+                            $taskUpdate = $tasks->updateTask($tid, $reassigned, $expire, $priority, $status);
 
-                    // update settings
-                    if (!empty($reassigned) && !empty($expire) && !empty($status)) {
+                            if ($taskUpdate) {
 
-                        $taskUpdate = $tasks->updateTask($tid, $reassigned, $expire, $priority, $status);
+                                // update task status
+                                if ($status == 2 || $status == 3) {
 
-                        if ($taskUpdate) {
+                                    $taskComplete = $tasks->completeTask($tid, $session->get("userid"), $completed);
 
-                            // update task status
-                            if ($status == 2 || $status == 3) {
+                                    $taskChanged = true;
+                                    $taskRedirection = true;
 
-                                $taskComplete = $tasks->completeTask($tid, $session->get("userid"), $completed);
+                                    if ($firstStatus == "OPEN") { 
 
-                                $taskChanged = true;
-                                $taskRedirection = true;
+                                        $taskChanged = true;
+                                    }
 
-                                if ($firstStatus == "OPEN") { 
+                                }
+
+                                if ($firstPriority != $priority) { 
 
                                     $taskChanged = true;
                                 }
 
+                                // task reassign notification
+                                if ($firstAssigned != $reassigned) {
+                                    
+                                    $notifications->newTaskNotify(array($users->getUserEmail($reassigned)), $pid, $tid, $project[0]["title"], $task[0]["title"], $task[0]["description"], $utilities->formatRemainingDate($expire, SHORT_DATE_FORMAT), $users->getUserEmail($author));
+
+                                    $taskChanged = true;
+
+                                }
+
+                                // task changes notification
+                                if($taskChanged) {
+                                    
+                                    $notifications->taskChangeNotify(array($managerEmail), $project[0]["title"], $task[0]["title"], $users->getUserFirstName($session->get("userid")), $pid, $tid, $users->getUserEmail($author));
+
+                                    $notice .= "Task successfully changed <br>";
+                                }
+
+                            } else {
+
+                                $notice .= "Error while changing task <br>";
+
+                            }
+                        }
+                        
+                    }
+
+                    /* task update and update file delete */
+
+                    // delete update and files
+                    if ($utilities->isGet() && !empty($_GET["action"]) && !empty($_GET["context"]) && !empty($_GET["uid"])) {
+                        
+                        $uid = $utilities->filter($_GET["uid"]);
+                        $action = $utilities->filter($_GET["action"]);
+                        $context = $utilities->filter($_GET["context"]);
+
+                        if ($updates->isUpdateAuthor($uid, $session->get("userid")) && $action == "delete" && $context == "update-file") {
+
+                            $updates->deleteUpdate($uid);
+
+                            $updateFiles = $uploads->getUpdateUploads($pid, $tid, $uid);
+
+                            if ($updateFiles) {
+
+                                for ($i=0; $i<count($updateFiles); $i++) {
+
+                                $updateFile = $uploads->getUpload($updateFiles[$i]["id"]);
+
+                                @unlink($updateFile[0]["path"]);
+
+                                }
+
+                                $uploads->deleteUploads($pid, $tid, $uid);
+
                             }
 
-                            if ($firstPriority != $priority) { 
-
-                                $taskChanged = true;
-                            }
-
-                            // task reassign notification
-                            if ($firstAssigned != $reassigned) {
-                                
-                                $notifications->newTaskNotify(array($users->getUserEmail($reassigned)), $pid, $tid, $project[0]["title"], $task[0]["title"], $task[0]["description"], $utilities->formatRemainingDate($expire, SHORT_DATE_FORMAT), $users->getUserEmail($author));
-
-                                $taskChanged = true;
-
-                            }
-
-                            // task changes notification
-                            if($taskChanged) {
-                                
-                                $notifications->taskChangeNotify(array($managerEmail), $project[0]["title"], $task[0]["title"], $users->getUserFirstName($session->get("userid")), $pid, $tid, $users->getUserEmail($author));
-
-                                $notice .= "Task successfully changed <br>";
-                            }
+                            $notice .= "Task update deleted <br>";
 
                         } else {
 
-                            $notice .= "Error while changing task <br>";
+                            $notice .= "You cannot delete this update <br>";
 
                         }
                     }
-                    
-                }
 
-                /* task update and update file delete */
+                    /* task file delete */
 
-                // delete update and files
-                if ($utilities->isGet() && !empty($_GET["action"]) && !empty($_GET["context"]) && !empty($_GET["uid"])) {
-                    
-                    $uid = $utilities->filter($_GET["uid"]);
-                    $action = $utilities->filter($_GET["action"]);
-                    $context = $utilities->filter($_GET["context"]);
+                    // delete task file
+                    if ($utilities->isGet() && !empty($_GET["action"]) && !empty($_GET["context"]) && !empty($_GET["fid"])) {
+                        
+                        $fid = $utilities->filter($_GET["fid"]);
+                        $action = $utilities->filter($_GET["action"]);
+                        $context = $utilities->filter($_GET["context"]);
 
-                    if ($updates->isUpdateAuthor($uid, $session->get("userid")) && $action == "delete" && $context == "update-file") {
+                        if ($roles->isProjectManager($pid, $session->get("userid")) && $action == "delete" && $context == "task-file") {
 
-                        $updates->deleteUpdate($uid);
-
-                        $updateFiles = $uploads->getUpdateUploads($pid, $tid, $uid);
-
-                        if ($updateFiles) {
-
-                            for ($i=0; $i<count($updateFiles); $i++) {
-
-                            $updateFile = $uploads->getUpload($updateFiles[$i]["id"]);
+                            $updateFile = $uploads->getUpload($fid);
 
                             @unlink($updateFile[0]["path"]);
 
-                            }
+                            $uploads->deleteUpload($updateFile[0]["id"]);
 
-                            $uploads->deleteUploads($pid, $tid, $uid);
+
+                            $notice .= "Task file deleted <br>";
+
+                        } else {
+
+                            $notice .= "You cannot delete this file <br>";
 
                         }
-
-                        $notice .= "Task update deleted <br>";
-
-                    } else {
-
-                        $notice .= "You cannot delete this update <br>";
-
                     }
-                }
 
-                /* task file delete */
+                    /* task information */
 
-                // delete task file
-                if ($utilities->isGet() && !empty($_GET["action"]) && !empty($_GET["context"]) && !empty($_GET["fid"])) {
-                    
-                    $fid = $utilities->filter($_GET["fid"]);
-                    $action = $utilities->filter($_GET["action"]);
-                    $context = $utilities->filter($_GET["context"]);
+                    // get task info if user have permission (not implemented)
+                    $project = $projects->getProject($pid);
+                    $task = $tasks->getTask($pid, $tid);
+                    $allUsers = $users->listAllProjectUsers($pid);
 
-                    if ($roles->isProjectManager($pid, $session->get("userid")) && $action == "delete" && $context == "task-file") {
+                    //permissions
+                    $canChange = $roles->canChangeTask($pid, $tid, $session->get("userid"));
+                    $canClose = $roles->canCloseTask($pid, $tid, $session->get("userid"));  
 
-                        $updateFile = $uploads->getUpload($fid);
+                    if (isset($project)) {
 
-                        @unlink($updateFile[0]["path"]);
+                        if (isset($task)) {
 
-                        $uploads->deleteUpload($updateFile[0]["id"]);
+                            $taskUpdates = $updates->listAllTaskUpdates($pid, $tid);
+                            $user = $users->getUser($task[0]["assigned"]);
 
-
-                        $notice .= "Task file deleted <br>";
-
-                    } else {
-
-                        $notice .= "You cannot delete this file <br>";
-
-                    }
-                }
-
-                /* task information */
-
-                // get task info if user have permission (not implemented)
-                $project = $projects->getProject($pid);
-                $task = $tasks->getTask($pid, $tid);
-                $allUsers = $users->listAllProjectUsers($pid);
-
-                //permissions
-                $canChange = $roles->canChangeTask($pid, $tid, $session->get("userid"));
-                $canClose = $roles->canCloseTask($pid, $tid, $session->get("userid"));  
-
-                if (isset($project)) {
-
-                    if (isset($task)) {
-
-                        $taskUpdates = $updates->listAllTaskUpdates($pid, $tid);
-                        $user = $users->getUser($task[0]["assigned"]);
+                        } else {
+                            // task not exist
+                            $utilities->redirect("error.php?code=7");
+                        }
 
                     } else {
-                        // task not exist
-                        $utilities->redirect("error.php?code=7");
+                        // project not exist
+                        $utilities->redirect("error.php?code=6");
                     }
 
                 } else {
-                    // project not exist
-                    $utilities->redirect("error.php?code=6");
+                    // account permission problem
+                    $utilities->redirect("error.php?code=5");
                 }
 
             } else {

@@ -221,32 +221,32 @@
                         if ($projects->isProjectOpen($activeTasksProject[0]["id"]) && $roles->canViewProject($activeTasksProject[0]["id"], $session->get("userid"))) {
                         ?>
 
-                        <li data-id="<?php echo $allSearchedTasks[$i]["id"]; ?>" data-expire="<?php echo $allSearchedTasks[$i]["expire"]; ?>" data-created="<?php echo $allSearchedTasks[$i]["created"]; ?>" data-assigned="<?php echo $users->getShortUserName($tasks->getAssignedTaskUser($activeTasksProject[0]["id"], $allSearchedTasks[$i]["id"])); ?>" data-title="<?php echo $allSearchedTasks[$i]["title"]; ?>" data-project="<?php echo $projects->getProjectTitle($activeTasksProject[0]["id"]);?>" data-projectid="<?php echo $projects->getProjectId($activeTasksProject[0]["id"]);?>">
+                            <?php
+                        if (!$tasks->isTaskPrivate($allSearchedTasks[$i]["project"], $allSearchedTasks[$i]["id"]) || ($tasks->isTaskPrivate($allSearchedTasks[$i]["project"], $allSearchedTasks[$i]["id"]) && !$roles->isProjectClient($allSearchedTasks[$i]["project"], $session->get("userid"))) || $tasks->isTaskMine($allSearchedTasks[$i]["project"], $allSearchedTasks[$i]["id"], $session->get("userid"))) {
+                        ?>
 
-                        <!-- task -->
-                        <div class="task task-bg <?php if ($tasks->isTaskHasPriority($allSearchedTasks[$i]["project"], $allSearchedTasks[$i]["id"])) { echo 'high'; } ?> <?php echo $utilities->setColorClass($allSearchedTasks[$i]["expire"]); ?>">
-                            <div class="task-title <?php if($tasks->isTaskExpired($allSearchedTasks[$i]["project"], $allSearchedTasks[$i]["id"])){ echo'striked';} ?>">
-                                <p><a class="tip" href="task.php?tid=<?php echo $allSearchedTasks[$i]["id"]; ?>&pid=<?php echo $allSearchedTasks[$i]["project"]; ?>" role="link" title="<?php echo strip_tags($allSearchedTasks[$i]["description"]); ?>"><?php echo $allSearchedTasks[$i]["title"]; ?></a></p>
+                            <li data-id="<?php echo $allSearchedTasks[$i]["id"]; ?>" data-expire="<?php echo $allSearchedTasks[$i]["expire"]; ?>" data-created="<?php echo $allSearchedTasks[$i]["created"]; ?>" data-assigned="<?php echo $users->getShortUserName($tasks->getAssignedTaskUser($activeTasksProject[0]["id"], $allSearchedTasks[$i]["id"])); ?>" data-title="<?php echo $allSearchedTasks[$i]["title"]; ?>" data-project="<?php echo $projects->getProjectTitle($activeTasksProject[0]["id"]);?>" data-projectid="<?php echo $projects->getProjectId($activeTasksProject[0]["id"]);?>">
+
+                            <!-- task -->
+                            <div class="task task-bg <?php if ($tasks->isTaskHasPriority($allSearchedTasks[$i]["project"], $allSearchedTasks[$i]["id"])) { echo 'high'; } ?> <?php echo $utilities->setColorClass($allSearchedTasks[$i]["expire"]); ?> <?php if ($tasks->isTaskPrivate($allSearchedTasks[$i]["project"], $allSearchedTasks[$i]["id"])) { echo 'private'; } ?>">
+                                <div class="task-title <?php if($tasks->isTaskExpired($allSearchedTasks[$i]["project"], $allSearchedTasks[$i]["id"])){ echo'striked';} ?>">
+                                    <p><a class="tip" href="task.php?tid=<?php echo $allSearchedTasks[$i]["id"]; ?>&pid=<?php echo $allSearchedTasks[$i]["project"]; ?>" role="link" title="<?php echo strip_tags($allSearchedTasks[$i]["description"]); ?>"><?php echo $allSearchedTasks[$i]["title"]; ?></a></p>
+                                </div>
+                                <div class="task-date">
+                                    <p><a class="tip" href="#" role="link" title="Due: <?php echo $utilities->formatRemainingDate($allSearchedTasks[$i]["expire"], SHORT_DATE_FORMAT); ?>"><?php echo $utilities->formatDate($allSearchedTasks[$i]["expire"], SHORT_DATE_FORMAT); ?></a></p>
+                                </div>
+                                <div class="task-user task-project">
+                                    <p><a class="tip" href="project.php?pid=<?php echo $allSearchedTasks[$i]["project"]; ?>" role="link" title="<?php echo strip_tags($activeTasksProject[0]["description"]); ?>"><?php echo $activeTasksProject[0]["title"]; ?></a></p>
+                                </div>
                             </div>
-                            <div class="task-date">
-                                <p><a class="tip" href="#" role="link" title="Due: <?php echo $utilities->formatRemainingDate($allSearchedTasks[$i]["expire"], SHORT_DATE_FORMAT); ?>"><?php echo $utilities->formatDate($allSearchedTasks[$i]["expire"], SHORT_DATE_FORMAT); ?></a></p>
-                            </div>
-                            <div class="task-user task-project">
-                                <p><a class="tip" href="project.php?pid=<?php echo $allSearchedTasks[$i]["project"]; ?>" role="link" title="<?php echo strip_tags($activeTasksProject[0]["description"]); ?>"><?php echo $activeTasksProject[0]["title"]; ?></a></p>
-                            </div>
-                        </div>
-                        <!-- /task -->
+                            <!-- /task -->
 
-                        </li>
+                            </li>
 
-                    <?php
-
-                        $index++;
-
-                        }
-                        
-                    } 
-                    ?>
+                            <?php $index++; ?>
+                            <?php } ?>
+                        <?php } ?>  
+                    <?php } ?>
 
                     </ul>
 

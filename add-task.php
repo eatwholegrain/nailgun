@@ -3,7 +3,7 @@
 
     if ($auth->isLogedIn() && $users->isUser($session->get("userid"))) {
 
-        if ($users->isAdmin($session->get("userid")) || $roles->isProjectManager($_GET["pid"], $session->get("userid"))) {
+        if ($users->isAdmin($session->get("userid")) || $roles->isProjectManager($utilities->filter($_GET["pid"]), $session->get("userid")) || $roles->isProjectClient($utilities->filter($_GET["pid"]), $session->get("userid"))) {
 
             if (!empty($_GET["pid"])) {
 
@@ -35,12 +35,13 @@
                             $created = $utilities->getDate();
                             $expire = $utilities->filter($_POST["radio"]);
                             $priority = $utilities->filter($_POST["priority"]);
+                            $private = $utilities->filter($_POST["private"]);
 
                             $expire = $utilities->setExpirationTime($expire);
 
                             $allFiles = $utilities->reArrayFiles($_FILES['file']);
 
-                            $task = $tasks->createTask($session->get("account"), $title, $description, $pid, $author, $assigned, $created, $expire, $priority, 1);
+                            $task = $tasks->createTask($session->get("account"), $title, $description, $pid, $author, $assigned, $created, $expire, $priority, $private, 1);
 
                             if (is_numeric($task)) {
 
@@ -201,6 +202,8 @@
 
         $("#priority").buttonset();
 
+        $("#private").buttonset();
+
         $("#task-date").slideUp();
 
         $("#datepicker").datepicker({
@@ -212,6 +215,12 @@
                 $("#radio2").val(dateText);
             }
         }).hide();
+
+        $("#private :radio").click(function() {
+            if($("#private :radio:checked").attr("id") == "private1") {
+                $.achtung({message: 'Make sure that task is not assigned to client.', timeout: 7});
+            } 
+        });
 
         $("#radio :radio").click(function() {
             if($("#radio :radio:checked").attr("id") == "radio2") {
@@ -415,7 +424,7 @@
 
                         <fieldset>
                             <label class="small-label" style="width: 250px;" for="priority">Mark as High Priority</label>
-                            <div id="priority">
+                            <div id="priority" style="float: right;">
                                 <label for="priority1">YES</label>
                                 <input type="radio" id="priority1" value="1" name="priority">
                                 <label for="priority2">NO</label>
@@ -424,6 +433,22 @@
                         </fieldset>
 
                         <div class="spacer"></div>
+
+                        <div style="<?php if($roles->isProjectClient($pid, $session->get("userid"))) { echo 'display: none'; } ?>">
+
+                            <fieldset>
+                                <label class="small-label" for="priority">Mark as Private <a class="tip" href="#" title="Private task is visible only to Project Managers and Workers. Client can't see this task."><img src="images/help.png"></a></label>
+                                <div id="private" style="float: right;">
+                                    <label for="private1">YES</label>
+                                    <input type="radio" id="private1" value="1" name="private">
+                                    <label for="private2">NO</label>
+                                    <input type="radio" id="private2" value="0" name="private" checked>
+                                </div>
+                            </fieldset>
+
+                            <div class="spacer"></div>
+
+                        </div>
 
                         <fieldset>
                             <a class="orange-button default-button tip" id="create-task" role="button" href="#" title="Create new task">CREATE</a>

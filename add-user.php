@@ -282,9 +282,12 @@
                                         <p>Add to projects as</p>
                                     </div>
                                     <div class="check-table-col2">
-                                        <p>User</p>
+                                        <p>Client</p>
                                     </div>
-                                    <div class="check-table-col3">
+                                    <div class="check-table-col2">
+                                        <p>Worker</p>
+                                    </div>
+                                    <div class="check-table-col2">
                                         <p>Manager</p>
                                     </div>
                                 </div>
@@ -299,9 +302,12 @@
                                         <p><?php echo $allProjects[$i]["title"]; ?></p>
                                     </div>
                                     <div class="check-table-col2">
+                                        <p><input type="radio" id="project-user-<?php echo $i; ?>" value="3" name="radio-<?php echo $allProjects[$i]["id"]; ?>"></p>
+                                    </div>
+                                    <div class="check-table-col2">
                                         <p><input type="radio" id="project-user-<?php echo $i; ?>" value="2" name="radio-<?php echo $allProjects[$i]["id"]; ?>"></p>
                                     </div>
-                                    <div class="check-table-col3">
+                                    <div class="check-table-col2">
                                         <p><input type="radio" id="project-manager-<?php echo $i; ?>" value="1" name="radio-<?php echo $allProjects[$i]["id"]; ?>"></input></p>
                                     </div>
                                     <div class="check-table-col4">

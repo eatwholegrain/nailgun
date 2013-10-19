@@ -319,8 +319,8 @@ class Task extends Database {
      * @param boolean $boolean Boolean desc.
      * @return mixed description
      */
-    public function createTask($account, $title, $description, $pid, $author, $assigned, $created, $expire, $priority, $status) {
-        $query = "INSERT INTO tasks (account, title, description, project, author, assigned, created, expire, priority, status) VALUES ($account, '$title', '$description', $pid, $author, $assigned, $created, $expire, $priority, $status)";
+    public function createTask($account, $title, $description, $pid, $author, $assigned, $created, $expire, $priority, $private, $status) {
+        $query = "INSERT INTO tasks (account, title, description, project, author, assigned, created, expire, priority, private, status) VALUES ($account, '$title', '$description', $pid, $author, $assigned, $created, $expire, $priority, $private, $status)";
         $data = $this->insert($query);
         return $this->getId();
     }
@@ -332,8 +332,8 @@ class Task extends Database {
      * @param boolean $boolean Boolean desc.
      * @return mixed description
      */
-    public function editTask($tid, $title, $description, $reassigned, $expire, $priority, $status) {
-        $query = "UPDATE tasks SET title='".$title."', description='".$description."', assigned=".$reassigned.", expire=".$expire.", priority=".$priority.", status=".$status." WHERE id=".$tid;
+    public function editTask($tid, $title, $description, $reassigned, $expire, $priority, $private, $status) {
+        $query = "UPDATE tasks SET title='".$title."', description='".$description."', assigned=".$reassigned.", expire=".$expire.", priority=".$priority.", private=".$private.", status=".$status." WHERE id=".$tid;
         $data = $this->insert($query);
         return $data;
     }
@@ -475,6 +475,23 @@ class Task extends Database {
         $query = "SELECT priority FROM tasks WHERE project=".$pid." AND id=".$tid." LIMIT 1";
         $data = $this->select($query);
         if($data[0]["priority"] == 1){
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    /**
+     * -.
+     * @param string $string String desc.
+     * @param number $number Number desc.
+     * @param boolean $boolean Boolean desc.
+     * @return mixed description
+     */
+    public function isTaskPrivate($pid, $tid) {
+        $query = "SELECT private FROM tasks WHERE project=".$pid." AND id=".$tid." LIMIT 1";
+        $data = $this->select($query);
+        if($data[0]["private"] == 1){
             return true;
         } else {
             return false;

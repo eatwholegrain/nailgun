@@ -191,18 +191,6 @@
     })   
 </script>
 
-<?php if (defined("CHAT") && CHAT) { ?>
-
-<script type="text/javascript">
-window.$zopim||(function(d,s){var z=$zopim=function(c){z._.push(c)},$=z.s=
-d.createElement(s),e=d.getElementsByTagName(s)[0];z.set=function(o){z.set.
-_.push(o)};z._=[];z.set._=[];$.async=!0;$.setAttribute('charset','utf-8');
-$.src='//cdn.zopim.com/?<?php if (defined("ZOPIM_ID")){ echo ZOPIM_ID;} ?>';z.t=+new Date;$.
-type='text/javascript';e.parentNode.insertBefore($,e)})(document,'script');
-</script>
-
-<?php } ?>
-
 </head>
 <body>
     <!-- wrap -->
@@ -330,9 +318,12 @@ type='text/javascript';e.parentNode.insertBefore($,e)})(document,'script');
                                         <p>Assigned to projects as</p>
                                     </div>
                                     <div class="check-table-col2">
-                                        <p>User</p>
+                                        <p>Client</p>
                                     </div>
-                                    <div class="check-table-col3">
+                                    <div class="check-table-col2">
+                                        <p>Worker</p>
+                                    </div>
+                                    <div class="check-table-col2">
                                         <p>Manager</p>
                                     </div>
                                 </div>
@@ -347,9 +338,12 @@ type='text/javascript';e.parentNode.insertBefore($,e)})(document,'script');
                                         <p><?php echo $allProjects[$i]["title"]; ?></p>
                                     </div>
                                     <div class="check-table-col2">
+                                        <p><input type="radio" id="radio-client-<?php echo $i; ?>" value="3" name="radio-<?php echo $allProjects[$i]["id"]; ?>" <?php if($roles->isProjectClient($allProjects[$i]["id"], $user[0]["id"])){ echo 'checked';} ?>></p>
+                                    </div>
+                                    <div class="check-table-col2">
                                         <p><input type="radio" id="radio-user-<?php echo $i; ?>" value="2" name="radio-<?php echo $allProjects[$i]["id"]; ?>" <?php if($roles->isProjectUser($allProjects[$i]["id"], $user[0]["id"])){ echo 'checked';} ?>></p>
                                     </div>
-                                    <div class="check-table-col3">
+                                    <div class="check-table-col2">
                                         <p><input type="radio" id="radio-manager-<?php echo $i; ?>" value="1" name="radio-<?php echo $allProjects[$i]["id"]; ?>" <?php if($roles->isProjectManager($allProjects[$i]["id"], $user[0]["id"])){ echo 'checked';} ?>></p>
                                     </div>
                                     <?php 

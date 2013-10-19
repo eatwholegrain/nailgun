@@ -35,7 +35,7 @@
                     } 
                 }
 
-                // if can view project
+                // who can view projects
                 if ($roles->canViewProject($_GET["pid"], $session->get("userid")) && ($projects->isProjectOpen($pid) || $users->isAdmin($session->get("userid")))) {
 
                     $project = $projects->getProject($pid);
@@ -64,7 +64,6 @@
                 // account permission problem
                 $utilities->redirect("error.php?code=5");
             }
-
 
         } else {
             // project not specified
@@ -150,20 +149,6 @@
             return false;
         });
 
-        $("#by-resolved").click(function() {
-            $("ul.listing > li").tsort('',{attr:'data-completed', order: 'desc'});
-            $(".tip").removeClass("sorted");
-            $(this).addClass("sorted");
-            return false;
-        });
-
-        $("#by-completed").click(function() {
-            $("ul.listing > li").tsort('',{attr:'data-completed', order: 'desc'});
-            $(".tip").removeClass("sorted");
-            $(this).addClass("sorted");
-            return false;
-        });
-
         $("#my").click(function() {
             onlyMe();
         });
@@ -224,6 +209,18 @@
 
 </script>
 
+<?php if (defined("CHAT") && CHAT) { ?>
+
+<script type="text/javascript">
+window.$zopim||(function(d,s){var z=$zopim=function(c){z._.push(c)},$=z.s=
+d.createElement(s),e=d.getElementsByTagName(s)[0];z.set=function(o){z.set.
+_.push(o)};z._=[];z.set._=[];$.async=!0;$.setAttribute('charset','utf-8');
+$.src='//cdn.zopim.com/?<?php if (defined("ZOPIM_ID")){ echo ZOPIM_ID;} ?>';z.t=+new Date;$.
+type='text/javascript';e.parentNode.insertBefore($,e)})(document,'script');
+</script>
+
+<?php } ?>
+
 </head>
 <body>
     <!-- wrap -->
@@ -282,7 +279,7 @@
             <div id="top-panel">
 
                 <?php 
-                if (($users->isAdmin($session->get("userid")) || $roles->isProjectManager($pid, $session->get("userid")) || $roles->isProjectClient($pid, $session->get("userid"))) && $projects->isProjectOpen($project[0]["id"])) {
+                if (($users->isAdmin($session->get("userid")) || $roles->isProjectManager($pid, $session->get("userid"))) && $projects->isProjectOpen($project[0]["id"])) {
                 ?>
                 <!-- add task -->
                 <div class="add">
@@ -348,7 +345,7 @@
 
                             if ($projectManagers) { 
                             ?>
-                            <p>Managers: 
+                            <p>Project managers: 
                                 <strong>
                                 <?php 
                                 
@@ -374,7 +371,7 @@
 
                             if ($projectUsers) { 
                             ?>
-                            <p>Workers: 
+                            <p>Project users: 
                                 <strong>
                                 <?php 
                                 for($i=0; $i<count($projectUsers); $i++) {
@@ -385,31 +382,6 @@
                                     <a class="tip project-managers" href="user.php?uid=<?php echo $projectUsers[$i]["user"]; ?>" title="<?php echo $users->getFullUserName($projectUsers[$i]["user"]); ?> (<?php echo $users->getUserEmail($projectUsers[$i]["user"]); ?>)"><?php echo $users->getShortUserName($projectUsers[$i]["user"]); ?></a>
                                     <?php } else { ?>
                                     <a class="tip project-managers" href="#" title="<?php echo $users->getFullUserName($projectUsers[$i]["user"]); ?> (<?php echo $users->getUserEmail($projectUsers[$i]["user"]); ?>)"><?php echo $users->getShortUserName($projectUsers[$i]["user"]); ?></a>
-                                    <?php } ?>
-                                <?php
-                                }
-                                ?>
-                                </strong>
-                            </p>
-                            <?php 
-                            } 
-                            ?>
-                            <?php
-                            $projectClients = $roles->getProjectClients($project[0]["id"]);
-
-                            if ($projectClients) { 
-                            ?>
-                            <p>Clients: 
-                                <strong>
-                                <?php 
-                                for($i=0; $i<count($projectClients); $i++) {
-                                ?>
-                                    <?php
-                                    if ($users->isAdmin($session->get("userid"))) {
-                                    ?>
-                                    <a class="tip project-managers" href="user.php?uid=<?php echo $projectClients[$i]["user"]; ?>" title="<?php echo $users->getFullUserName($projectClients[$i]["user"]); ?> (<?php echo $users->getUserEmail($projectClients[$i]["user"]); ?>)"><?php echo $users->getShortUserName($projectClients[$i]["user"]); ?></a>
-                                    <?php } else { ?>
-                                    <a class="tip project-managers" href="#" title="<?php echo $users->getFullUserName($projectClients[$i]["user"]); ?> (<?php echo $users->getUserEmail($projectClients[$i]["user"]); ?>)"><?php echo $users->getShortUserName($projectClients[$i]["user"]); ?></a>
                                     <?php } ?>
                                 <?php
                                 }
@@ -463,45 +435,39 @@
                     for ($i=0; $i < count($activeTasks); $i++) {
                     ?>
 
-                        <?php
-                        if (!$tasks->isTaskPrivate($pid, $activeTasks[$i]["id"]) || ($tasks->isTaskPrivate($pid, $activeTasks[$i]["id"]) && !$roles->isProjectClient($pid, $session->get("userid"))) || $tasks->isTaskMine($pid, $activeTasks[$i]["id"], $session->get("userid"))) {
-                        ?>
+                    <li data-id="<?php echo $activeTasks[$i]["id"]; ?>" data-expire="<?php echo $activeTasks[$i]["expire"]; ?>" data-created="<?php echo $activeTasks[$i]["created"]; ?>" data-assigned="<?php echo $users->getShortUserName($tasks->getAssignedTaskUser($pid, $activeTasks[$i]["id"])); ?>" data-title="<?php echo $activeTasks[$i]["title"]; ?>" data-mine="<?php if ($tasks->isTaskMine($activeTasks[$i]["project"], $activeTasks[$i]["id"], $session->get("userid"))) { echo '1'; } else { echo '0'; } ?>">
 
-                        <li data-id="<?php echo $activeTasks[$i]["id"]; ?>" data-expire="<?php echo $activeTasks[$i]["expire"]; ?>" data-created="<?php echo $activeTasks[$i]["created"]; ?>" data-assigned="<?php echo $users->getShortUserName($tasks->getAssignedTaskUser($pid, $activeTasks[$i]["id"])); ?>" data-title="<?php echo $activeTasks[$i]["title"]; ?>" data-mine="<?php if ($tasks->isTaskMine($activeTasks[$i]["project"], $activeTasks[$i]["id"], $session->get("userid"))) { echo '1'; } else { echo '0'; } ?>" data-private="<?php echo $activeTasks[$i]["private"]; ?>">
-
-                        <!-- task  -->
-                        <div class="task task-bg <?php if ($tasks->isTaskHasPriority($activeTasks[$i]["project"], $activeTasks[$i]["id"])) { echo 'high'; } ?> <?php echo $utilities->setColorClass($activeTasks[$i]["expire"]); ?> <?php if ($tasks->isTaskPrivate($activeTasks[$i]["project"], $activeTasks[$i]["id"])) { echo 'private'; } ?>">
-                            <div class="task-title <?php if($tasks->isTaskExpired($pid, $activeTasks[$i]["id"])){ echo'striked';} ?>">
-                                <p><a class="tip" href="task.php?tid=<?php echo $activeTasks[$i]["id"]; ?>&pid=<?php echo $pid; ?>" role="link" title="<?php echo strip_tags($activeTasks[$i]["description"]); ?>"><?php echo $activeTasks[$i]["title"]; ?></a></p>
-                            </div>
-                            <div class="task-date">
-                                <p><a class="tip" href="#" role="link" title="Due: <?php echo $utilities->formatRemainingDate($activeTasks[$i]["expire"], SHORT_DATE_FORMAT); ?>"><?php echo $utilities->formatDate($activeTasks[$i]["expire"], SHORT_DATE_FORMAT); ?></a></p>
-                            </div>
-                            <div class="task-user">
-                                <p>
-                                    <a class="tip" href="#" role="link" title="<?php echo $users->getFullUserName($tasks->getAssignedTaskUser($pid, $activeTasks[$i]["id"])); ?>">
-                                    <?php 
-                                        if (isset($activeTasks[$i]["assigned"])) { 
-                                            echo $users->getShortUserName($tasks->getAssignedTaskUser($pid, $activeTasks[$i]["id"])); 
-                                        }; 
-                                    ?>
-                                    </a>
-                                </p>
-                            </div>
-                            <?php if (defined("UPDATE_COUNTER") && UPDATE_COUNTER && !$tasks->isTaskEmpty($pid, $activeTasks[$i]["id"])) { ?>
-
-                            <?php } ?>
-                            <?php if (defined("UPDATE_COUNTER") && UPDATE_COUNTER && !$tasks->isTaskEmpty($pid, $activeTasks[$i]["id"])) { ?>
-                            <div class="task-update-counter transitions">
-                                <p><a class="tip" href="task.php?tid=<?php echo $activeTasks[$i]["id"]; ?>&pid=<?php echo $pid; ?>" role="link" title="This task has been updated <b><?php echo $updates->countTasksUpdates($pid, $activeTasks[$i]["id"]); ?></b> times"><?php echo $updates->countTasksUpdates($pid, $activeTasks[$i]["id"]); ?></a></p>
-                            </div>
-                            <?php } ?>
+                    <!-- task  -->
+                    <div class="task task-bg <?php if ($tasks->isTaskHasPriority($activeTasks[$i]["project"], $activeTasks[$i]["id"])) { echo 'high'; } ?> <?php echo $utilities->setColorClass($activeTasks[$i]["expire"]); ?>">
+                        <div class="task-title <?php if($tasks->isTaskExpired($pid, $activeTasks[$i]["id"])){ echo'striked';} ?>">
+                            <p><a class="tip" href="task.php?tid=<?php echo $activeTasks[$i]["id"]; ?>&pid=<?php echo $pid; ?>" role="link" title="<?php echo strip_tags($activeTasks[$i]["description"]); ?>"><?php echo $activeTasks[$i]["title"]; ?></a></p>
                         </div>
-                        <!-- /task -->
-
-                        </li>
+                        <div class="task-date">
+                            <p><a class="tip" href="#" role="link" title="Due: <?php echo $utilities->formatRemainingDate($activeTasks[$i]["expire"], SHORT_DATE_FORMAT); ?>"><?php echo $utilities->formatDate($activeTasks[$i]["expire"], SHORT_DATE_FORMAT); ?></a></p>
+                        </div>
+                        <div class="task-user">
+                            <p>
+                                <a class="tip" href="#" role="link" title="<?php echo $users->getFullUserName($tasks->getAssignedTaskUser($pid, $activeTasks[$i]["id"])); ?>">
+                                <?php 
+                                    if (isset($activeTasks[$i]["assigned"])) { 
+                                        echo $users->getShortUserName($tasks->getAssignedTaskUser($pid, $activeTasks[$i]["id"])); 
+                                    }; 
+                                ?>
+                                </a>
+                            </p>
+                        </div>
+                        <?php if (defined("UPDATE_COUNTER") && UPDATE_COUNTER && !$tasks->isTaskEmpty($pid, $activeTasks[$i]["id"])) { ?>
 
                         <?php } ?>
+                        <?php if (defined("UPDATE_COUNTER") && UPDATE_COUNTER && !$tasks->isTaskEmpty($pid, $activeTasks[$i]["id"])) { ?>
+                        <div class="task-update-counter transitions">
+                            <p><a class="tip" href="task.php?tid=<?php echo $activeTasks[$i]["id"]; ?>&pid=<?php echo $pid; ?>" role="link" title="This task has been updated <b><?php echo $updates->countTasksUpdates($pid, $activeTasks[$i]["id"]); ?></b> times"><?php echo $updates->countTasksUpdates($pid, $activeTasks[$i]["id"]); ?></a></p>
+                        </div>
+                        <?php } ?>
+                    </div>
+                    <!-- /task -->
+
+                    </li>
 
                     <?php } ?>
                     
@@ -514,12 +480,6 @@
                         <div class="task-title">
                             <p>Resolved tasks</p>
                         </div>
-                        <div class="task-date">
-                            <p><a class="tip sorted" id="by-resolved" href="#" title="Sort by date of resolving the task">Resolved</a></p>
-                        </div>
-                        <div class="task-user">
-                            <p>Resolved by</p>
-                        </div>
                     </div>
                     <!-- /task header -->
 
@@ -529,7 +489,7 @@
                     for ($i=0; $i < count($resolvedTasks); $i++) {
                     ?>
                     
-                    <li data-id="<?php echo $resolvedTasks[$i]["id"]; ?>" data-expire="<?php echo $resolvedTasks[$i]["expire"]; ?>" data-created="<?php echo $resolvedTasks[$i]["created"]; ?>" data-assigned="<?php echo $users->getShortUserName($tasks->getAssignedTaskUser($pid, $resolvedTasks[$i]["id"])); ?>" data-completed="<?php echo $resolvedTasks[$i]["completed"]; ?>" data-title="<?php echo $resolvedTasks[$i]["title"]; ?>" data-mine="<?php if ($tasks->isTaskMine($resolvedTasks[$i]["project"], $resolvedTasks[$i]["id"], $session->get("userid"))) { echo '1'; } else { echo '0'; } ?>">
+                    <li data-id="<?php echo $resolvedTasks[$i]["id"]; ?>" data-expire="<?php echo $resolvedTasks[$i]["expire"]; ?>" data-created="<?php echo $resolvedTasks[$i]["created"]; ?>" data-assigned="<?php echo $users->getShortUserName($tasks->getAssignedTaskUser($pid, $resolvedTasks[$i]["id"])); ?>" data-title="<?php echo $resolvedTasks[$i]["title"]; ?>" data-mine="<?php if ($tasks->isTaskMine($resolvedTasks[$i]["project"], $resolvedTasks[$i]["id"], $session->get("userid"))) { echo '1'; } else { echo '0'; } ?>">
 
                     <!-- task -->
                     <div class="task task-bg-resolved">
@@ -537,14 +497,14 @@
                             <p><a class="tip" href="task.php?tid=<?php echo $resolvedTasks[$i]["id"]; ?>&pid=<?php echo $pid; ?>" role="link" title="<?php echo strip_tags($resolvedTasks[$i]["description"]); ?>"><?php echo $resolvedTasks[$i]["title"]; ?></a></p>
                         </div>
                         <div class="task-date">
-                            <p><a class="tip" href="#" role="link" title="<?php echo $utilities->formatRemainingDate($resolvedTasks[$i]["completed"], SHORT_DATE_FORMAT, ""); ?>"><?php echo $utilities->formatDate($resolvedTasks[$i]["completed"], SHORT_DATE_FORMAT, ""); ?></a></p>
+                            <p><a class="tip" href="#" role="link" title="Due: <?php echo $utilities->formatRemainingDate($resolvedTasks[$i]["expire"], SHORT_DATE_FORMAT); ?>"><?php echo date(SHORT_DATE_FORMAT, $resolvedTasks[$i]["expire"]); ?></a></p>
                         </div>
                         <div class="task-user">
                             <p>
-                                <a class="tip" href="#" role="link" title="<?php echo $users->getFullUserName($tasks->getCompletedTaskUser($pid, $resolvedTasks[$i]["id"])); ?>">
+                                <a class="tip" href="#" role="link" title="<?php echo $users->getFullUserName($tasks->getAssignedTaskUser($pid, $resolvedTasks[$i]["id"])); ?>">
                                 <?php 
-                                    if (isset($resolvedTasks[$i]["finished"])) { 
-                                        echo $users->getShortUserName($tasks->getCompletedTaskUser($pid, $resolvedTasks[$i]["id"])); 
+                                    if (isset($resolvedTasks[$i]["assigned"])) { 
+                                        echo $users->getShortUserName($tasks->getAssignedTaskUser($pid, $resolvedTasks[$i]["id"])); 
                                     }; 
                                 ?>
                                 </a>
@@ -571,12 +531,6 @@
                         <div class="task-title">
                             <p>Closed tasks</p>
                         </div>
-                        <div class="task-date">
-                            <p><a class="tip sorted" id="by-completed" href="#" title="Sort by task completion date">Completed</a></p>
-                        </div>
-                        <div class="task-user">
-                            <p>Completed by</p>
-                        </div>
                     </div>
                     <!-- /task header -->
 
@@ -586,7 +540,7 @@
                     for ($i=0; $i < count($closedTasks); $i++) {
                     ?>
 
-                    <li data-id="<?php echo $closedTasks[$i]["id"]; ?>" data-expire="<?php echo $closedTasks[$i]["expire"]; ?>" data-created="<?php echo $closedTasks[$i]["created"]; ?>" data-assigned="<?php echo $users->getShortUserName($tasks->getAssignedTaskUser($pid, $closedTasks[$i]["id"])); ?>" data-completed="<?php echo $closedTasks[$i]["completed"]; ?>" data-title="<?php echo $closedTasks[$i]["title"]; ?>" data-mine="<?php if ($tasks->isTaskMine($closedTasks[$i]["project"], $closedTasks[$i]["id"], $session->get("userid"))) { echo '1'; } else { echo '0'; } ?>">
+                    <li data-id="<?php echo $closedTasks[$i]["id"]; ?>" data-expire="<?php echo $closedTasks[$i]["expire"]; ?>" data-created="<?php echo $closedTasks[$i]["created"]; ?>" data-assigned="<?php echo $users->getShortUserName($tasks->getAssignedTaskUser($pid, $closedTasks[$i]["id"])); ?>" data-title="<?php echo $closedTasks[$i]["title"]; ?>" data-mine="<?php if ($tasks->isTaskMine($closedTasks[$i]["project"], $closedTasks[$i]["id"], $session->get("userid"))) { echo '1'; } else { echo '0'; } ?>">
 
                     <!-- task -->
                     <div class="task task-bg-closed">
@@ -594,14 +548,14 @@
                             <p><a class="tip" href="task.php?tid=<?php echo $closedTasks[$i]["id"]; ?>&pid=<?php echo $pid; ?>" role="link" title="<?php echo strip_tags($closedTasks[$i]["description"]); ?>"><?php echo $closedTasks[$i]["title"]; ?></a></p>
                         </div>
                         <div class="task-date">
-                            <p><a class="tip" href="#" role="link" title="<?php echo $utilities->formatRemainingDate($closedTasks[$i]["completed"], SHORT_DATE_FORMAT, ""); ?>"><?php echo $utilities->formatDate($closedTasks[$i]["completed"], SHORT_DATE_FORMAT, ""); ?></a></p>
+                            <p><a class="tip" href="#" role="link" title="Due: <?php echo $utilities->formatRemainingDate($closedTasks[$i]["expire"], SHORT_DATE_FORMAT); ?>"><?php echo date(SHORT_DATE_FORMAT, $closedTasks[$i]["expire"]); ?></a></p>
                         </div>
                         <div class="task-user">
                             <p>
-                                <a class="tip" href="#" role="link" title="<?php echo $users->getFullUserName($tasks->getCompletedTaskUser($pid, $closedTasks[$i]["id"])); ?>">
+                                <a class="tip" href="#" role="link" title="<?php echo $users->getFullUserName($tasks->getAssignedTaskUser($pid, $closedTasks[$i]["id"])); ?>">
                                 <?php 
-                                    if (isset($closedTasks[$i]["finished"])) { 
-                                        echo $users->getShortUserName($tasks->getCompletedTaskUser($pid, $closedTasks[$i]["id"])); 
+                                    if (isset($closedTasks[$i]["assigned"])) { 
+                                        echo $users->getShortUserName($tasks->getAssignedTaskUser($pid, $closedTasks[$i]["id"])); 
                                     }; 
                                 ?>
                                 </a>

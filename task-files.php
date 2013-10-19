@@ -10,90 +10,97 @@
 
             if ($tasks->isAccountTask($tid, $session->get("account"))) {
 
-                $firstAssigned = $tasks->getAssignedTaskUser($pid, $tid);
-                $firstStatus = $tasks->getTaskStatus($pid, $tid);  
+                if (($tasks->isTaskPrivate($pid, $tid) && !$roles->isProjectClient($pid, $session->get("userid"))) || $tasks->isTaskMine($pid, $tid, $session->get("userid"))) {
 
-                // delete update
-                if ($utilities->isGet() && !empty($_GET["action"]) && !empty($_GET["context"]) && !empty($_GET["uid"])) {
-                    
-                    $uid = $utilities->filter($_GET["uid"]);
-                    $action = $utilities->filter($_GET["action"]);
-                    $context = $utilities->filter($_GET["context"]);
+                    $firstAssigned = $tasks->getAssignedTaskUser($pid, $tid);
+                    $firstStatus = $tasks->getTaskStatus($pid, $tid);  
 
-                    if ($updates->isUpdateAuthor($uid, $session->get("userid")) && $action == "delete" && $context == "update-file") {
+                    // delete update
+                    if ($utilities->isGet() && !empty($_GET["action"]) && !empty($_GET["context"]) && !empty($_GET["uid"])) {
+                        
+                        $uid = $utilities->filter($_GET["uid"]);
+                        $action = $utilities->filter($_GET["action"]);
+                        $context = $utilities->filter($_GET["context"]);
 
-                        $updates->deleteUpdate($uid);
+                        if ($updates->isUpdateAuthor($uid, $session->get("userid")) && $action == "delete" && $context == "update-file") {
 
-                        $updateFiles = $uploads->getUpdateUploads($pid, $tid, $uid);
+                            $updates->deleteUpdate($uid);
 
-                        if ($updateFiles) {
+                            $updateFiles = $uploads->getUpdateUploads($pid, $tid, $uid);
 
-                            for ($i=0; $i<count($updateFiles); $i++) {
+                            if ($updateFiles) {
 
-                            $updateFile = $uploads->getUpload($updateFiles[$i]["id"]);
+                                for ($i=0; $i<count($updateFiles); $i++) {
 
-                            @unlink($updateFile[0]["path"]);
+                                $updateFile = $uploads->getUpload($updateFiles[$i]["id"]);
+
+                                @unlink($updateFile[0]["path"]);
+
+                                }
+
+                                $uploads->deleteUploads($pid, $tid, $uid);
 
                             }
 
-                            $uploads->deleteUploads($pid, $tid, $uid);
+                            $notice .= "Task update deleted <br>";
+
+                        } else {
+
+                            $notice .= "You cannot delete this update <br>";
 
                         }
-
-                        $notice .= "Task update deleted <br>";
-
-                    } else {
-
-                        $notice .= "You cannot delete this update <br>";
-
                     }
-                }
 
-                // delete task file
-                if ($utilities->isGet() && !empty($_GET["action"]) && !empty($_GET["context"]) && !empty($_GET["fid"])) {
-                    
-                    $fid = $utilities->filter($_GET["fid"]);
-                    $action = $utilities->filter($_GET["action"]);
-                    $context = $utilities->filter($_GET["context"]);
+                    // delete task file
+                    if ($utilities->isGet() && !empty($_GET["action"]) && !empty($_GET["context"]) && !empty($_GET["fid"])) {
+                        
+                        $fid = $utilities->filter($_GET["fid"]);
+                        $action = $utilities->filter($_GET["action"]);
+                        $context = $utilities->filter($_GET["context"]);
 
-                    if ($roles->isProjectManager($pid, $session->get("userid")) && $action == "delete" && $context == "task-file") {
+                        if ($roles->isProjectManager($pid, $session->get("userid")) && $action == "delete" && $context == "task-file") {
 
-                        $updateFile = $uploads->getUpload($fid);
+                            $updateFile = $uploads->getUpload($fid);
 
-                        @unlink($updateFile[0]["path"]);
+                            @unlink($updateFile[0]["path"]);
 
-                        $uploads->deleteUpload($updateFile[0]["id"]);
+                            $uploads->deleteUpload($updateFile[0]["id"]);
 
 
-                        $notice .= "Task file deleted <br>";
+                            $notice .= "Task file deleted <br>";
 
-                    } else {
+                        } else {
 
-                        $notice .= "You cannot delete this file <br>";
+                            $notice .= "You cannot delete this file <br>";
 
+                        }
                     }
-                }
 
-                // get task info if user have permission (not implemented)
-                $project = $projects->getProject($pid);
-                $task = $tasks->getTask($pid, $tid);
-                $allUsers = $users->listAllUsers($session->get("account"));
+                    // get task info if user have permission (not implemented)
+                    $project = $projects->getProject($pid);
+                    $task = $tasks->getTask($pid, $tid);
+                    $allUsers = $users->listAllUsers($session->get("account"));
 
-                if (isset($project)) {
+                    if (isset($project)) {
 
-                    if (isset($task)) {
+                        if (isset($task)) {
 
-                        $taskUpdates = $updates->listAllTaskUpdates($pid, $tid);
-                        $user = $users->getUser($task[0]["assigned"]);
+                            $taskUpdates = $updates->listAllTaskUpdates($pid, $tid);
+                            $user = $users->getUser($task[0]["assigned"]);
+
+                        } else {
+                            // task not exist
+                            $utilities->redirect("error.php?code=7");
+                        }
 
                     } else {
-                        // task not exist
-                        $utilities->redirect("error.php?code=7");
+                        // project not exist
+                        $utilities->redirect("error.php?code=6");
                     }
 
                 } else {
-                    // project not exist
-                    $utilities->redirect("error.php?code=6");
+                    // account permission problem
+                    $utilities->redirect("error.php?code=5");
                 }
 
             } else {
@@ -570,8 +577,8 @@ type='text/javascript';e.parentNode.insertBefore($,e)})(document,'script');
             <!-- logo -->
             <div id="logo">
                 <div id="export">
-                    <a class="tip export-link" href="rss.php?pid=<?php echo $pid; ?>&tid=<?php echo $tid; ?>&key=<?php echo ACCESS_KEY; ?>" title="View updates for <?php echo $task[0]["title"]; ?> task using RSS channel">RSS</a>
-                    <a class="tip export-link" href="ics.php?pid=<?php echo $pid; ?>&tid=<?php echo $tid; ?>&key=<?php echo ACCESS_KEY; ?>" title="Export calendar in ICS format for <?php echo $task[0]["title"]; ?> task">Export task calendar</a>
+                    <a class="tip export-link" href="rss.php?p=<?php echo $utilities->obfuscate($pid); ?>&t=<?php echo $utilities->obfuscate($tid); ?>" title="View updates for <?php echo $task[0]["title"]; ?> task using RSS channel">RSS</a>
+                    <a class="tip export-link" href="ics.php?p=<?php echo $utilities->obfuscate($pid); ?>&t=<?php echo $utilities->obfuscate($tid); ?>" title="Export calendar in ICS format for <?php echo $task[0]["title"]; ?> task">Export task calendar</a>
                 </div>
                 <img class="ng-logo" src="images/logo.png" alt="<?php echo APPLICATION_TITLE ?> logo" />
             </div>

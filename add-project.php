@@ -286,9 +286,12 @@
                                         <p>Project Team</p>
                                     </div>
                                     <div class="check-table-col2">
-                                        <p>User</p>
+                                        <p>Client</p>
                                     </div>
-                                    <div class="check-table-col3">
+                                    <div class="check-table-col2">
+                                        <p>Worker</p>
+                                    </div>
+                                    <div class="check-table-col2">
                                         <p>Manager</p>
                                     </div>
                                 </div>
@@ -301,6 +304,9 @@
                                 <div class="check-table-row">
                                     <div class="check-table-col1">
                                         <p><?php echo $allUsers[$i]["firstname"]." ".$allUsers[$i]["lastname"]; ?></p>
+                                    </div>
+                                    <div class="check-table-col2">
+                                        <p><input type="radio" id="radio-user-<?php echo $i; ?>" value="3" name="radio-<?php echo $allUsers[$i]["id"]; ?>"></p>
                                     </div>
                                     <div class="check-table-col2">
                                         <p><input type="radio" id="radio-user-<?php echo $i; ?>" value="2" name="radio-<?php echo $allUsers[$i]["id"]; ?>"></p>

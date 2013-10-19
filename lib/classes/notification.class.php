@@ -237,7 +237,7 @@ class Notification extends PHPMailer {
         $this->receivers = $receivers;
         $this->sender = $sender;
         $this->subject = "Your account for ".APPLICATION_TITLE;
-        $this->message = "<p>Hi <b>".$name."</b>,</p><p>New account is created for you.</p><p>Your login information:</p><p><i>username</i>: <b>".$username."</b></p><br/><p><i>password</i>: <b>".$password."</b></p><p>Check your roles for projects.</p><p><a style='color: #16709B; text-decoration: none;' href='".ROOT."'>Click here to login</a></p>";    
+        $this->message = "<p>Hi <b>".$name."</b>,</p><p>New account is created for you.</p><p>Your login information:</p><p><i>username</i>: <b>".$username."</b></p><p><i>password</i>: <b>".$password."</b></p><p>Check your roles for projects.</p><p><a style='color: #16709B; text-decoration: none;' href='".ROOT."'>Click here to login</a></p>";    
         $this->notifyStatus = $this->sendNotification();
         return $this->notifyStatus;
     }

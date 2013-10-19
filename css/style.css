@@ -184,6 +184,7 @@ label { color: #fff; }
 label.large-label { display: block; float: left; width: 100%; font: 18px "CodeProDemoRegular", sans-serif; padding: 10px 0; }
 label.small-label { display: block; float: left; width: 150px; font: 18px "Helvetica", Arial, sans-serif; padding: 7px 0 5px 0; }
 label.smaller-label { display: block; float: left; width: auto; font: 18px "Helvetica", Arial, sans-serif; padding: 5px 0; margin-right: 15px; }
+label a.tip { vertical-align: middle; }
 select { width: 200px; }
 .ui-state-default { display: block; float: left; font: 18px "Helvetica", Arial, sans-serif!important; background: #fff!important; color: #4c4c4c!important; border: 0px!important; padding: 0px!important;  }
 .ui-selectmenu { margin: 0px; padding: 0px; }
@@ -255,6 +256,8 @@ article#project-tasks {}
 .expired { background: #FF9000!important; }
 .high { background: #FF9000 url(../images/high-exclamation.png) no-repeat top left!important; border: 0px solid #D1496F; }
 .high .task-title { padding-left: 30px; width: 385px; }
+.private { background-image: url(../images/high-invisible.png)!important; background-repeat: no-repeat!important; border: 0px solid #D1496F; opacity: 1;  }
+.private .task-title { padding-left: 30px; width: 385px; }
 /***** role colors *****/
 .owner { background: #1A4E66!important; }
 .admin { background: #195d7d!important; }
@@ -346,8 +349,8 @@ article#add-task .text-input, article#add-project .text-input { width: 430px; /*
 .check-table-row { position: relative; float: left; width: 440px; background: #ccdfe7; padding: 0 10px; margin: 4px 0; -webkit-border-radius: 5px; border-radius: 5px; }
 .check-table-row p { font-size: 18px; line-height: 22px; color: #4C4C4C; padding: 9px 5px; }
 #explanations .check-table-row p { /*font-size: 14px;*/ line-height: 22px; color: #fff; padding: 9px 5px; }
-.check-table-col1 { float: left; width: 270px; }
-.check-table-header .check-table-col1 { width: 285px; }
+.check-table-col1 { float: left; /*width: 270px;*/  width: 200px; }
+.check-table-header .check-table-col1 { /*width: 285px;*/ width: 215px; }
 .check-table-col2 { float: left; width: 70px; }
 .check-table-col3 { float: left; width: 70px; }
 .check-table-col4 { position: absolute; top: 7px; right: 7px; width: 16px; height: 16px; }
